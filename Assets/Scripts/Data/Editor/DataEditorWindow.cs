@@ -10,20 +10,12 @@ using UnityEngine;
 
 namespace GMLM.Data.Editor {
     public class DataEditorWindow : OdinMenuEditorWindow {
-        [MenuItem("GMLM/Datas")]
+        [MenuItem("GMLM/Open Data Editor")]
         private static void OpenWindow() {
             var window = GetWindow<DataEditorWindow>();
             window.position = GUIHelper.GetEditorWindowRect().AlignCenter(1200, 700);
             window.Show();
         }
-
-        // 개발 들어가기 전에 어떻게 할 지
-        // 설계를 해보자
-        
-        
-        // IDataTable 만들어서
-        // 위에 Create 메뉴 만들기
-        // 
 
         protected override OdinMenuTree BuildMenuTree() {
             
@@ -33,33 +25,9 @@ namespace GMLM.Data.Editor {
                 { "0. Settings", config },
             };
 
-            /*
-
-            var createNewStageData = new CreateMenu<StageDataTable, StageData>(config.StageDataTablePath);
-            tree.Add("1. Stages", createNewStageData);
-            tree.AddAllAssetsAtPath("1. Stages", config.StageDataTablePath, typeof(StageDataTable), true, true);
-
-            var createNewFirstEventData = new CreateMenu<FirstEventDataTable, FirstEventData>(config.FirstEventDataTablePath);
-            tree.Add("2. First Events", createNewFirstEventData);
-            tree.AddAllAssetsAtPath("2. First Events", config.FirstEventDataTablePath, typeof(FirstEventDataTable), true, true);
-
-            var createNewBreakEventData = new CreateMenu<BreakEventDataTable, BreakEventData>(config.BreakEventDataTablePath);
-            tree.Add("3. Break Events", createNewBreakEventData);
-            tree.AddAllAssetsAtPath("3. Break Events", config.BreakEventDataTablePath, typeof(BreakEventDataTable), true, true);
-
-            var createNewBattleEventData = new CreateMenu<BattleEventDataTable, BattleEventData>(config.BattleEventDataTablePath);
-            tree.Add("4. Battle Events", createNewBattleEventData);
-            tree.AddAllAssetsAtPath("4. Battle Events", config.BattleEventDataTablePath, typeof(BattleEventDataTable), true, true);
-
-            var createNewCommonEventData = new CreateMenu<CommonEventDataTable, CommonEventData>(config.CommonEventDataTablePath);
-            tree.Add("5. Common Events", createNewCommonEventData);
-            tree.AddAllAssetsAtPath("5. Common Events", config.CommonEventDataTablePath, typeof(CommonEventDataTable), true, true);
-
-            var createNewAbilityData = new CreateMenu<AbilityDataTable, AbilityData>(config.AbilityDataTablePath);
-            tree.Add("6. Abilities", createNewAbilityData);
-            tree.AddAllAssetsAtPath("6. Abilities", config.AbilityDataTablePath, typeof(AbilityDataTable), true, true);
-
-            */
+            var createNewPilotData = new CreateMenu<PilotDataTable, PilotData>(config.PilotDataTablePath);
+            tree.Add("1. Pilots", createNewPilotData);
+            tree.AddAllAssetsAtPath("1. Pilots", config.PilotDataTablePath, typeof(PilotDataTable), true, true);
             
             tree.SortMenuItemsByName(false);
 

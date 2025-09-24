@@ -6,31 +6,12 @@ using UnityEngine;
 
 namespace GMLM.Data.Editor {
     public class DataEditorConfig : ScriptableObject {
-        [SerializeField]
-        [FolderPath(AbsolutePath = false)]
-        private string stageDataTablePath;
-        [SerializeField]
-        [FolderPath(AbsolutePath = false)]
-        private string firstEventDataTablePath;
-        [SerializeField]
-        [FolderPath(AbsolutePath = false)]
-        private string commonEventDataTablePath;
-        [SerializeField]
-        [FolderPath(AbsolutePath = false)]
-        private string breakEventDataTablePath;
-        [SerializeField]
-        [FolderPath(AbsolutePath = false)]
-        private string battleEventDataTablePath;
-        [SerializeField]
-        [FolderPath(AbsolutePath = false)]
-        private string abilityDataTablePath;
 
-        public string StageDataTablePath => stageDataTablePath;
-        public string FirstEventDataTablePath => firstEventDataTablePath;
-        public string CommonEventDataTablePath => commonEventDataTablePath;
-        public string BreakEventDataTablePath => breakEventDataTablePath;
-        public string BattleEventDataTablePath => battleEventDataTablePath;
-        public string AbilityDataTablePath => abilityDataTablePath;
+        [SerializeField]
+        [FolderPath(AbsolutePath = false)]
+        private string pilotDataTablePath;
+
+        public string PilotDataTablePath => pilotDataTablePath;
 
         private bool isLoadedFromAsset = true;
         public bool IsLoadedFromAsset { get { return isLoadedFromAsset; } }
