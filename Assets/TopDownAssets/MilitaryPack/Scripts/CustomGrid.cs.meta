@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: dc625c2785cd0a847b663be8e1c4e619
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 133669
+  packageName: 'Top-Down Assets: Futuristic Pack'
+  packageVersion: 1.6
+  assetPath: Assets/TopDownAssets/MilitaryPack/Scripts/CustomGrid.cs
+  uploadId: 614197

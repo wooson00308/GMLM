@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ad5c80eb13038f14981dfa176def4ef2
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 133669
+  packageName: 'Top-Down Assets: Futuristic Pack'
+  packageVersion: 1.6
+  assetPath: Assets/TopDownAssets/MilitaryPack/Scripts/SkinEditor.cs
+  uploadId: 614197
