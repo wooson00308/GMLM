@@ -103,8 +103,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3beac41afc8223040b6a490d579c2531, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Weapon
-  _attackPower: 10
-  _attackSpeed: 2
+  _attackPower: 2
+  _attackSpeed: 4
   _range: 8
   _type: 1
   _projectilePrefab: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
