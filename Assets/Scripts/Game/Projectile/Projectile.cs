@@ -8,6 +8,8 @@ namespace GMLM.Game
         [SerializeField] private float _speed = 12f;
         [SerializeField] private float _lifeTime = 3f;
         [SerializeField] private bool _isHoming = true; // true: 추적, false: 직선 비유도
+        [SerializeField] private GameObject _hitEffect;
+        [SerializeField] private GameObject _destroyEffect;
         private Transform _target;
         private int _damage;
         private int _shooterTeam;
@@ -47,6 +49,22 @@ namespace GMLM.Game
             _initialDir = dirXY.normalized;
         }
 
+		// 비유도 발사: 초기 방향을 직접 지정
+		public void InitializeWithDirection(Vector2 initialDirection, int shooterTeam, int damage)
+		{
+			_target = null;
+			_isHoming = false;
+			_shooterTeam = shooterTeam;
+			_damage = Mathf.Max(0, damage);
+			_timeLeft = _lifeTime;
+			Vector3 dir = new Vector3(initialDirection.x, initialDirection.y, 0f);
+			if (dir.sqrMagnitude <= 0f)
+			{
+				dir = transform.right;
+			}
+			_initialDir = dir.normalized;
+		}
+
         private void Awake()
         {
             _rb = GetComponent<Rigidbody2D>();
@@ -73,6 +91,10 @@ namespace GMLM.Game
             _timeLeft -= Time.deltaTime;
             if (_timeLeft <= 0f)
             {
+                if (_destroyEffect != null)
+                {
+                    Instantiate(_destroyEffect, transform.position, transform.rotation);
+                }
                 Destroy(gameObject);
                 return;
             }
@@ -98,6 +120,10 @@ namespace GMLM.Game
             if (!mecha.IsAlive) return;
             if (mecha.TeamId == _shooterTeam) return;
             mecha.TakeDamage(_damage);
+            if (_hitEffect != null)
+            {
+                Instantiate(_hitEffect, transform.position, transform.rotation);
+            }
             Destroy(gameObject);
         }
     }

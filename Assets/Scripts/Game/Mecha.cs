@@ -82,6 +82,9 @@ namespace GMLM.Game
         private Vector2 _incomingDir = Vector2.zero;
         private float _incomingTTI = float.PositiveInfinity;
 
+        [Header("Animation")]
+        [SerializeField] private MechaAnimation _mechaAnimation;
+
         [Header("Dash")]
         [SerializeField] private float _dashDistance = 3.0f;
         [SerializeField] private float _dashSpeed = 20.0f;
@@ -96,6 +99,10 @@ namespace GMLM.Game
         {
             MechaRegistry.Register(this);
             RefreshWeapons();
+            if (_mechaAnimation == null)
+            {
+                _mechaAnimation = GetComponentInChildren<MechaAnimation>(true);
+            }
         }
 
         private void OnDisable()
@@ -118,10 +125,18 @@ namespace GMLM.Game
                     next.z = transform.position.z;
                     transform.position = next;
                     _dashRemainingDistance -= step;
+					if (_mechaAnimation != null)
+					{
+						_mechaAnimation.UpdateDashThrusters();
+					}
                 }
                 else
                 {
                     _isDashing = false;
+					if (_mechaAnimation != null)
+					{
+						_mechaAnimation.StopDashFx();
+					}
                 }
             }
 
@@ -192,14 +207,14 @@ namespace GMLM.Game
             return any;
         }
 
-        public bool MoveTowards(Vector3 targetPosition)
+		public bool MoveTowards(Vector3 targetPosition)
         {
             if (_isDashing) return true; // 대시 중에는 독립 이동 우선
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             Vector3 tgtPos = targetPosition; tgtPos.z = 0f;
             Vector3 dir = (tgtPos - selfPos).normalized;
             if (dir.sqrMagnitude <= 0f) return false;
-            RotateTowards(dir);
+			AimTowards(dir);
             // 가/감속 적용
             float targetSpeed = Mathf.Max(0f, _moveSpeed);
             float rate = (_currentSpeed < targetSpeed) ? _acceleration : _deceleration;
@@ -207,16 +222,20 @@ namespace GMLM.Game
             Vector3 next = selfPos + dir * _currentSpeed * Time.deltaTime;
             next.z = transform.position.z;
             transform.position = next;
+			if (_mechaAnimation != null)
+			{
+				_mechaAnimation.UpdateMoveThrusters(new Vector2(dir.x, dir.y) * _currentSpeed);
+			}
             return true;
         }
 
-        public bool MoveInDirection(Vector3 direction, bool rotateToMovement = true)
+		public bool MoveInDirection(Vector3 direction, bool rotateToMovement = true)
         {
             if (_isDashing) return true; // 대시 중에는 독립 이동 우선
             Vector3 dir = direction; dir.z = 0f;
             if (dir.sqrMagnitude <= 0f) return false;
             dir.Normalize();
-            if (rotateToMovement) RotateTowards(dir);
+			if (rotateToMovement) AimTowards(dir);
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             float targetSpeed = Mathf.Max(0f, _moveSpeed);
             float rate = (_currentSpeed < targetSpeed) ? _acceleration : _deceleration;
@@ -224,31 +243,51 @@ namespace GMLM.Game
             Vector3 next = selfPos + dir * _currentSpeed * Time.deltaTime;
             next.z = transform.position.z;
             transform.position = next;
+			if (_mechaAnimation != null)
+			{
+				_mechaAnimation.UpdateMoveThrusters(new Vector2(dir.x, dir.y) * _currentSpeed);
+			}
             return true;
         }
 
-        public void FaceTowards(Vector3 targetPosition)
+		public void FaceTowards(Vector3 targetPosition)
         {
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             Vector3 tgtPos = targetPosition; tgtPos.z = 0f;
             Vector3 dir = (tgtPos - selfPos);
             if (dir.sqrMagnitude <= 0f) return;
-            RotateTowards(dir.normalized);
+			AimTowards(dir.normalized);
         }
 
-        private void RotateTowards(Vector3 desiredDir)
+		private void AimTowards(Vector3 desiredDir)
         {
             Vector3 from = transform.right; from.z = 0f;
             Vector3 to = desiredDir; to.z = 0f;
             if (to.sqrMagnitude <= 0f) return;
             from.Normalize(); to.Normalize();
-            // 라디안 스텝으로 제한 회전
-            float maxRad = Mathf.Deg2Rad * Mathf.Max(0f, _turnRateDeg) * Time.deltaTime;
-            Vector3 newDir = Vector3.RotateTowards(from, to, maxRad, 0f);
-            if (newDir.sqrMagnitude > 0f)
-            {
-                transform.right = newDir;
-            }
+			// 1) 머리/손 먼저 조준
+			if (_mechaAnimation != null)
+			{
+				_mechaAnimation.UpdateAiming(to);
+				if (_mechaAnimation.EvaluateBodyAssist(to, out float residualYawDeg, out int sign))
+				{
+					// 2) 보조 회전: 잔여 각도만큼, 동체 회전 속도 제한
+					float stepDeg = Mathf.Min(residualYawDeg, Mathf.Max(0f, _turnRateDeg) * Time.deltaTime);
+					if (stepDeg > 0f)
+					{
+						float stepRad = Mathf.Deg2Rad * (sign * stepDeg);
+						Vector3 target = Quaternion.Euler(0f, 0f, stepDeg * sign) * from;
+						if (target.sqrMagnitude > 0f) transform.right = target;
+					}
+				}
+			}
+			else
+			{
+				// 폴백: 기존 회전 로직
+				float maxRad = Mathf.Deg2Rad * Mathf.Max(0f, _turnRateDeg) * Time.deltaTime;
+				Vector3 newDir = Vector3.RotateTowards(from, to, maxRad, 0f);
+				if (newDir.sqrMagnitude > 0f) transform.right = newDir;
+			}
         }
 
         private void Reset()
@@ -296,6 +335,11 @@ namespace GMLM.Game
             _dashDir = dir;
             _dashRemainingDistance = Mathf.Max(0f, _dashDistance);
             _dashCooldownTimer = _dashCooldown;
+			if (_mechaAnimation != null)
+			{
+				float dashDuration = (_dashSpeed > 0f) ? (_dashDistance / _dashSpeed) : 0.15f;
+				_mechaAnimation.PlayDashFx(new Vector2(dir.x, dir.y), dashDuration);
+			}
             return true;
         }
 

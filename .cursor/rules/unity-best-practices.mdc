@@ -1,0 +1,28 @@
+---
+description: 
+globs: *.cs
+alwaysApply: false
+---
+---
+description: Best practices for writing efficient and maintainable Unity C# code.
+globs: ["Assets/**/*.cs"] # Apply to all C# scripts in Assets
+alwaysApply: false # Could be auto-attached or manually invoked
+---
+
+# Unity C# Best Practices
+
+## Performance
+- Avoid frequent `GetComponent<T>()` calls in `Update()`. Cache component references in `Awake()` or `Start()`.
+- Be mindful of garbage collection. Avoid allocating memory in tight loops (e.g., `Update`). Use object pooling for frequently created/destroyed objects.
+- Use `CompareTag()` instead of direct string comparison (`gameObject.tag == "Player"`).
+- Minimize physics calculations where possible. Use layer collision matrix effectively.
+- Leverage Coroutines or UniTask/Async methods for long-running operations instead of blocking the main thread.
+
+## Unity Patterns & Code Organization
+- Use ScriptableObjects for configuration data and shared assets (`Assets/AF/Data/Resources/`).
+- Utilize the Inspector (`[SerializeField]`) for tweaking variables instead of hardcoding values.
+- Use `Awake()` for initialization within the script itself.
+- Use `Start()` for initialization that depends on other scripts being initialized (runs after all `Awake()` calls).
+- Use `OnEnable()` / `OnDisable()` for setup/teardown related to the component becoming active/inactive, especially for event subscriptions.
+- **Principle: One primary public type (class, interface, struct, enum, etc.) per script file. Small, related private helper classes might be acceptable within the same file.**
+- **Dependency Management & Type Creation:** If a required type is missing during development, do not assume its structure or create it directly. Instead, report the missing dependency to the user, request the necessary type definitions, and await their provision.

@@ -15,6 +15,8 @@ namespace GMLM.Game
 
         public Vector2 IncomingDir { get; private set; }
         public float IncomingTTI { get; private set; } = float.PositiveInfinity;
+		public Vector2 IncomingOrigin { get; private set; }
+		public Vector2 IncomingVelocity { get; private set; }
 
         private void Awake()
         {
@@ -37,8 +39,10 @@ namespace GMLM.Game
 
         private void ScanProjectiles()
         {
-            IncomingTTI = float.PositiveInfinity;
-            IncomingDir = Vector2.zero;
+			IncomingTTI = float.PositiveInfinity;
+			IncomingDir = Vector2.zero;
+			IncomingOrigin = Vector2.zero;
+			IncomingVelocity = Vector2.zero;
 
             var center = (Vector2)transform.position;
             var hits = Physics2D.OverlapCircleAll(center, _senseRadius, _projectileMask);
@@ -56,7 +60,7 @@ namespace GMLM.Game
                 if (Vector2.Dot(r, v) >= 0f) continue;
 
                 float tStar = -Vector2.Dot(r, v) / v.sqrMagnitude; // 최소 근접 시간
-                if (tStar < 0f) continue;
+					if (tStar < 0f) continue;
                 Vector2 closest = r + v * tStar;
                 float dMin = closest.magnitude;
                 float hitRadius = _mechaRadius + _projectileRadius;
@@ -64,12 +68,26 @@ namespace GMLM.Game
                 {
                     if (tStar < IncomingTTI)
                     {
-                        IncomingTTI = tStar;
-                        IncomingDir = v.normalized; // 투사체 진행 방향
+							IncomingTTI = tStar;
+							IncomingDir = v.normalized; // 투사체 진행 방향
+							IncomingOrigin = (Vector2)proj.transform.position;
+							IncomingVelocity = v;
                     }
                 }
             }
         }
+
+		public bool WillPathCross(Vector2 desiredDir, float pathSpeed, float horizon, float clearance, out float crossTime, out float minDistance)
+		{
+			crossTime = 0f;
+			minDistance = float.PositiveInfinity;
+			if (!float.IsFinite(pathSpeed) || pathSpeed <= 0f) return false;
+			Vector2 posA = (Vector2)transform.position;
+			Vector2 velA = desiredDir.normalized * pathSpeed;
+			Vector2 posB = IncomingOrigin;
+			Vector2 velB = IncomingVelocity;
+			return PredictionUtils.WillPathsCrossWithin(posA, velA, posB, velB, horizon, clearance, out crossTime, out minDistance);
+		}
     }
 }
 

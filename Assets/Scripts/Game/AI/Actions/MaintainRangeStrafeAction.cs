@@ -16,6 +16,8 @@ namespace GMLM.Game
         private float _minToggleTime = 1f;
         private float _maxToggleTime = 2.5f;
         private bool _forceEvadeToggle = false;
+		private float _sinceLastEvade = 0f;
+		private float _evadeMinInterval = 0.4f;
 
         public MaintainRangeStrafeAction(IBlackboard blackboard, string selfKey = "self", string targetKey = "target", 
             float orbitWeight = 0.8f, float margin = 0.5f, 
@@ -29,12 +31,17 @@ namespace GMLM.Game
             _minToggleTime = minToggleTime;
             _maxToggleTime = maxToggleTime;
             _toggleWaitTime = Random.Range(_minToggleTime, _maxToggleTime);
+			_sinceLastEvade = 999f;
         }
 
         // 외부에서 회피 토글 트리거
-        public void TriggerEvadeToggle()
+		public void TriggerEvadeToggle()
         {
-            _forceEvadeToggle = true;
+			// Gate external toggles by minimum interval to avoid thrashing
+			if (_sinceLastEvade >= _evadeMinInterval)
+			{
+				_forceEvadeToggle = true;
+			}
         }
 
         public override UniTask<NodeStatus> Execute()
@@ -105,20 +112,22 @@ namespace GMLM.Game
             desired = desired.normalized;
 
             // 기본적으로 궤도 이동은 대치 상태이므로 시선은 적으로 고정
-            mecha.MoveInDirection(desired, false);
+			mecha.MoveInDirection(desired, false);
             mecha.FaceTowards(tgtPos);
 
-            // 회피 토글 즉시 반영
+			// 회피 토글 즉시 반영 (with min interval gate)
             if (_forceEvadeToggle)
             {
                 _forceEvadeToggle = false;
-                _strafeSign *= -1f;
+				_strafeSign *= -1f;
                 _toggleTimer = 0f;
                 _toggleWaitTime = Random.Range(_minToggleTime, _maxToggleTime);
+				_sinceLastEvade = 0f;
             }
 
             // 주기적으로 방향 전환해 원 형태 유지
             _toggleTimer += Time.deltaTime;
+			_sinceLastEvade += Time.deltaTime;
             if (_toggleTimer > _toggleWaitTime)
             {
                 _toggleTimer = 0f;
@@ -129,6 +138,47 @@ namespace GMLM.Game
 
             return new UniTask<NodeStatus>(NodeStatus.Running);
         }
+
+		// 외부에서 경로 예측에 사용할 현재 프레임의 기대 이동 방향을 노출
+		public bool TryPredictDesiredDirection(out Vector2 desiredDirection)
+		{
+			desiredDirection = Vector2.zero;
+			var self = Blackboard.GetTransform(_selfKey);
+			var targetGo = Blackboard.GetGameObject(_targetKey);
+			if (self == null || targetGo == null) return false;
+			Vector3 selfPos = self.position; selfPos.z = 0f;
+			Vector3 tgtPos = targetGo.transform.position; tgtPos.z = 0f;
+			Vector3 toTarget = (tgtPos - selfPos);
+			float dist = toTarget.magnitude;
+			if (dist <= Mathf.Epsilon) return false;
+			Vector3 dirToTarget = toTarget / dist;
+			Vector3 tangent = new Vector3(-dirToTarget.y, dirToTarget.x, 0f) * _strafeSign;
+			Vector3 tangentN = tangent.sqrMagnitude > 0f ? tangent.normalized : tangent;
+			// inside/outside blend 동일 계산 재사용
+			float desiredRange = 1.5f;
+			// margin 기반 간단화
+			float inside = Mathf.Max(0f, desiredRange - dist);
+			float insideDeadzone = Mathf.Max(_margin, desiredRange * 0.10f);
+			Vector3 radialDir;
+			float radialErr;
+			if (dist >= desiredRange)
+			{
+				radialDir = dirToTarget;
+				radialErr = dist - desiredRange;
+			}
+			else
+			{
+				radialDir = -dirToTarget;
+				radialErr = (inside > insideDeadzone) ? (inside - insideDeadzone) : 0f;
+			}
+			float wRadial = Mathf.Clamp01(radialErr / Mathf.Max(0.001f, _margin));
+			float wTangent = Mathf.Lerp(1f, 1f - _orbitWeight, wRadial);
+			Vector3 desired = (tangentN * wTangent) + (radialDir * wRadial);
+			if (desired.sqrMagnitude <= 1e-6f) desired = tangentN;
+			desired = desired.normalized;
+			desiredDirection = desired;
+			return true;
+		}
     }
 }
 
