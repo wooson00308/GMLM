@@ -125,18 +125,66 @@ namespace GMLM.Game
 				_sinceLastEvade = 0f;
             }
 
-            // 주기적으로 방향 전환해 원 형태 유지
+            // 주기적으로 방향 전환해 원 형태 유지 (비활성화)
+            
             _toggleTimer += Time.deltaTime;
 			_sinceLastEvade += Time.deltaTime;
             if (_toggleTimer > _toggleWaitTime)
             {
-                _toggleTimer = 0f;
-                _strafeSign *= -1f;
-
-                _toggleWaitTime = Random.Range(_minToggleTime, _maxToggleTime);
+                ToggleDirection();
             }
 
             return new UniTask<NodeStatus>(NodeStatus.Running);
+        }
+
+        /// <summary>
+        /// 대시 방향에 따라 스트레이프 방향 업데이트
+        /// 대시 방향 ≈ 현재 방향 → 유지
+        /// 대시 방향 ≠ 현재 방향 → 반전
+        /// </summary>
+        public void UpdateDirectionFromDash(Vector3 dashDirection)
+        {
+            var target = Blackboard.GetGameObject(_targetKey);
+            var self = Blackboard.GetTransform(_selfKey);
+            if (target == null || self == null) return;
+            
+            // 타겟으로의 방향 벡터
+            Vector3 toTarget = (target.transform.position - self.position);
+            toTarget.z = 0f;
+            if (toTarget.sqrMagnitude <= Mathf.Epsilon) return;
+            toTarget.Normalize();
+            
+            // 오른쪽 접선 방향 (시계방향 기준)
+            Vector3 rightTangent = new Vector3(-toTarget.y, toTarget.x, 0f);
+            
+            // 대시 방향과 오른쪽 접선의 내적
+            Vector3 dashDir = dashDirection;
+            dashDir.z = 0f;
+            if (dashDir.sqrMagnitude <= Mathf.Epsilon) return;
+            dashDir.Normalize();
+            
+            float dot = Vector3.Dot(dashDir, rightTangent);
+            
+            // 임계값(0.1f)으로 미세한 각도 차이 무시
+            // dot > 0 → 오른쪽 대시, dot < 0 → 왼쪽 대시
+            if (dot > 0.1f && _strafeSign < 0f)
+            {
+                // 오른쪽으로 대시했는데 현재 왼쪽 선회 중 → 오른쪽으로 전환
+                _strafeSign = 1f;
+            }
+            else if (dot < -0.1f && _strafeSign > 0f)
+            {
+                // 왼쪽으로 대시했는데 현재 오른쪽 선회 중 → 왼쪽으로 전환
+                _strafeSign = -1f;
+            }
+            // else: 같은 방향이면 유지
+        }
+
+        public void ToggleDirection()
+        {
+            _strafeSign *= -1f;
+            _toggleTimer = 0f;
+            _toggleWaitTime = Random.Range(_minToggleTime, _maxToggleTime);
         }
 
 		// 외부에서 경로 예측에 사용할 현재 프레임의 기대 이동 방향을 노출

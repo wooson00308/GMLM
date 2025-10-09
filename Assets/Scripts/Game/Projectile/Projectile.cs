@@ -10,30 +10,44 @@ namespace GMLM.Game
         [SerializeField] private bool _isHoming = true; // true: 추적, false: 직선 비유도
         [SerializeField] private GameObject _hitEffect;
         [SerializeField] private GameObject _destroyEffect;
+        
+        [Header("Threat Level")]
+        [SerializeField, Tooltip("고위협 투사체 (바주카/미사일): 삐삐삐 경고 + 강제 대시 유발")]
+        private bool _isHighThreat = false;
+        
+        [Header("Homing Settings (AC6 Style)")]
+        [SerializeField, Tooltip("발사 후 호밍 활성화 지연 (초)")] 
+        private float _homingDelay = 0.2f;
+        [SerializeField, Range(0f, 1f), Tooltip("호밍 강도 (0=직진, 1=최대 추적)")]
+        private float _homingStrength = 1.0f;
+        [SerializeField, Tooltip("최대 회전 속도 (deg/sec)")]
+        private float _maxTurnRateDeg = 180f;
+        [SerializeField, Tooltip("호밍 지속 시간 (초, 이후 직진)")]
+        private float _homingDuration = 5.0f;
+        [SerializeField, Tooltip("추적 가능 최대 각도 (deg, 초과 시 호밍 해제)")]
+        private float _maxTrackingAngleDeg = 150f;
+        
         private Transform _target;
         private int _damage;
         private int _shooterTeam;
         private float _timeLeft;
+        private float _elapsedTime = 0f; // 발사 후 경과 시간
         private Rigidbody2D _rb;
         private Collider2D _trigger;
         private Vector3 _initialDir; // 비유도 초기 비행 방향(XY)
+        private Vector3 _currentDir;  // 현재 비행 방향 (호밍용)
 
         // Telemetry for sensors
         public bool IsHoming => _isHoming;
+        public bool IsHighThreat => _isHighThreat;
         public int ShooterTeam => _shooterTeam;
         public float Speed => _speed;
         public Vector2 DirectionXY
         {
             get
             {
-                if (_isHoming && _target != null)
-                {
-                    Vector3 selfPos = transform.position; selfPos.z = 0f;
-                    Vector3 tgtPos = _target.position; tgtPos.z = 0f;
-                    Vector3 d = (tgtPos - selfPos);
-                    return d.sqrMagnitude > 0f ? ((Vector2)d.normalized) : (Vector2)_initialDir;
-                }
-                return (Vector2)_initialDir;
+                // 현재 비행 방향 반환 (호밍 여부 무관)
+                return (Vector2)_currentDir;
             }
         }
 
@@ -44,9 +58,11 @@ namespace GMLM.Game
             _shooterTeam = shooterTeam;
             _damage = Mathf.Max(0, damage);
             _timeLeft = _lifeTime;
+            _elapsedTime = 0f;
 
             Vector3 dirXY = target.position - transform.position; dirXY.z = 0f;
             _initialDir = dirXY.normalized;
+            _currentDir = _initialDir;
         }
 
 		// 비유도 발사: 초기 방향을 직접 지정
@@ -57,12 +73,14 @@ namespace GMLM.Game
 			_shooterTeam = shooterTeam;
 			_damage = Mathf.Max(0, damage);
 			_timeLeft = _lifeTime;
-			Vector3 dir = new Vector3(initialDirection.x, initialDirection.y, 0f);
+            _elapsedTime = 0f;
+            Vector3 dir = new Vector3(initialDirection.x, initialDirection.y, 0f);
 			if (dir.sqrMagnitude <= 0f)
 			{
-				dir = transform.right;
+                dir = transform.up; // up을 진행방향으로 사용
 			}
 			_initialDir = dir.normalized;
+            _currentDir = _initialDir;
 		}
 
         private void Awake()
@@ -84,11 +102,14 @@ namespace GMLM.Game
         private void OnEnable()
         {
             _timeLeft = _lifeTime;
+            _elapsedTime = 0f;
         }
 
         private void Update()
         {
             _timeLeft -= Time.deltaTime;
+            _elapsedTime += Time.deltaTime;
+            
             if (_timeLeft <= 0f)
             {
                 if (_destroyEffect != null)
@@ -101,13 +122,54 @@ namespace GMLM.Game
 
             // XY 평면 고정
             Vector3 selfPos = transform.position; selfPos.z = 0f;
-            Vector3 dir = (_isHoming && _target != null)
-                ? (new Vector3(_target.position.x, _target.position.y, 0f) - selfPos).normalized
-                : _initialDir;
+            Vector3 dir = _currentDir;
+            
+            // AC6 스타일 호밍 로직
+            if (_isHoming && _target != null)
+            {
+                // 1) 호밍 활성화 조건 체크
+                bool homingActive = _elapsedTime >= _homingDelay 
+                                 && _elapsedTime <= (_homingDelay + _homingDuration);
+                
+                if (homingActive && _homingStrength > 0f)
+                {
+                    Vector3 toTarget = new Vector3(_target.position.x, _target.position.y, 0f) - selfPos;
+                    toTarget.z = 0f;
+                    
+                    if (toTarget.sqrMagnitude > 1e-6f)
+                    {
+                        Vector3 targetDir = toTarget.normalized;
+                        
+                        // 2) 추적 각도 체크
+                        float angleToTarget = Vector3.Angle(_currentDir, targetDir);
+                        
+                        if (angleToTarget <= _maxTrackingAngleDeg)
+                        {
+                            // 3) 제한된 선회로 타겟 방향으로 회전
+                            float maxRotRad = Mathf.Deg2Rad * _maxTurnRateDeg * Time.deltaTime;
+                            Vector3 newDir = Vector3.RotateTowards(_currentDir, targetDir, maxRotRad, 0f);
+                            
+                            // 4) 호밍 강도 적용 (보간)
+                            dir = Vector3.Lerp(_currentDir, newDir, _homingStrength).normalized;
+                        }
+                        // else: 타겟이 시야각 밖 → 직진 유지
+                    }
+                }
+                // else: 호밍 비활성 구간 → 직진
+            }
+            else
+            {
+                // 비유도탄은 초기 방향 유지
+                dir = _initialDir;
+            }
+            
+            _currentDir = dir;
+            
             if (dir.sqrMagnitude > 0f)
             {
                 transform.position = selfPos + dir * _speed * Time.deltaTime;
-                transform.right = dir; // 이동 방향을 바라보게 회전 (호밍 시 타겟 방향)
+                // 시각만 90도 보정 (이동 방향은 유지)
+                transform.rotation = Quaternion.FromToRotation(Vector3.up, dir) * Quaternion.Euler(0f, 0f, 90f);
             }
 
             // Trigger-based collision handles hits

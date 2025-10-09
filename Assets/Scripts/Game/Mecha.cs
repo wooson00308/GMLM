@@ -95,6 +95,9 @@ namespace GMLM.Game
         private Vector3 _dashDir = Vector3.zero; // XY
         private float _dashRemainingDistance = 0f;
 
+        // World-space velocity on XY plane (for predictive aiming, AI, FX)
+        public Vector2 WorldVelocity2D { get; private set; } = Vector2.zero;
+        private Vector3 _lastPosition;
         private void OnEnable()
         {
             MechaRegistry.Register(this);
@@ -103,6 +106,8 @@ namespace GMLM.Game
             {
                 _mechaAnimation = GetComponentInChildren<MechaAnimation>(true);
             }
+            _lastPosition = transform.position;
+            WorldVelocity2D = Vector2.zero;
         }
 
         private void OnDisable()
@@ -161,6 +166,16 @@ namespace GMLM.Game
                 gameObject.SetActive(false);
                 return;
             }
+
+            // Update world velocity (XY) after all movement for this frame
+            if (dt > 0f)
+            {
+                Vector3 pos = transform.position; pos.z = 0f;
+                Vector3 prev = _lastPosition; prev.z = 0f;
+                Vector2 vel = (pos - prev) / dt;
+                WorldVelocity2D = vel;
+            }
+            _lastPosition = transform.position;
         }
 
         public void InitializeTeam(int teamId)

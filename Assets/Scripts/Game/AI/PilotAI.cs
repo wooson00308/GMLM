@@ -11,7 +11,7 @@ namespace GMLM.Game
         {
             // Blackboard priming
             blackboard.SetTransform("self", this.transform);
-
+            var self = GetComponent<Mecha>();
             // Ensure sensor
             var sensor = GetComponent<MechaProjectileSensor>();
             if (sensor == null)
@@ -21,16 +21,16 @@ namespace GMLM.Game
 
             // Actions
             var updateTarget = new UpdateTargetAction(blackboard, "self", "target", "teamId", 2.0f);
-            var strafe = new MaintainRangeStrafeAction(blackboard, "self", "target", 0.75f, 0f, 2f, 4f);
-            var evadeToggle = new EvadeToggleAction(blackboard, "self", strafe, 0.35f);
-            var evadeDash = new EvadeDashAction(blackboard, "self", 0.25f, 15f);
+            var strafe = new MaintainRangeStrafeAction(blackboard, "self", "target", 0.75f, 0f, 1f, 6.5f);
+            //var evadeToggle = new EvadeToggleAction(blackboard, "self", strafe, 0.35f);
+            var evadeDash = new EvadeDashAction(blackboard, "self", 0.25f, strafe); // strafe 참조 전달
             var attack = new AttackAction(blackboard, "self", "target", 0f); // 무기 사거리 사용
             var idle = new IdleAction(blackboard);
 
             // Parallel: 회피 토글/대시, 궤도 유지, 공격 동시 수행
             var parallel = new Parallel(Parallel.Policy.RequireOne, new List<Node>
             {
-                evadeToggle,
+                //evadeToggle,
                 evadeDash,
                 strafe,
                 attack

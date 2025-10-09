@@ -59,7 +59,22 @@ namespace GMLM.Game
                 return new UniTask<NodeStatus>(NodeStatus.Failure);
             }
 
-            // 병렬 사격: 사용 가능한 모든 무기 시도
+            // AC6 스타일 하드 락온: 타겟 현재 위치로 단순 조준
+            Vector3 selfPos = selfTr.position; selfPos.z = 0f;
+            Vector3 tgtPos = targetGo.transform.position; tgtPos.z = 0f;
+            Vector3 desiredAim = (tgtPos - selfPos); desiredAim.z = 0f;
+
+            // [주석처리] 예측 조준 - 변태/뉴타입/핵쟁이 전용 (수동 조준 모드에서만 활성화 검토)
+            // 기본 하드 락온에서는 현재 위치만 추적. 유도탄은 Projectile.IsHoming으로 자체 추적
+            //desiredAim = ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
+
+            if (desiredAim.sqrMagnitude > 1e-6f)
+            {
+                desiredAim.Normalize();
+                selfMecha.FaceTowards(selfPos + desiredAim * 2f);
+            }
+
+            // 병렬 사격: 사용 가능한 모든 무기 시도 (무기는 머즐.right으로 발사)
             var all = selfMecha.WeaponsAll;
             if (all != null && all.Count > 0)
             {
@@ -72,6 +87,43 @@ namespace GMLM.Game
             
             // 사거리 안에서는 쿨다운 동안에도 액션을 Running으로 유지해 병렬 동작을 지속
             return new UniTask<NodeStatus>(NodeStatus.Running);
+        }
+
+        // [예측 조준 유틸] 고급 AI/플레이어 수동 조준용 - 향후 옵션으로 활성화 가능
+        private Vector3 ComputePredictiveAim(Vector3 selfPos, Vector3 targetPos, Mecha selfMecha, Mecha targetMecha)
+        {
+            Vector3 desiredAim = (targetPos - selfPos);
+            var weaponsRO = selfMecha.WeaponsAll;
+            float bestProjectileSpeed = 0f;
+            bool anyHoming = false;
+            if (weaponsRO != null)
+            {
+                for (int i = 0; i < weaponsRO.Count; i++)
+                {
+                    var w = weaponsRO[i];
+                    if (w == null) continue;
+                    anyHoming |= w.IsProjectileHoming;
+                    bestProjectileSpeed = Mathf.Max(bestProjectileSpeed, w.ProjectileSpeed);
+                }
+            }
+            if (!anyHoming && bestProjectileSpeed > 0.01f)
+            {
+                Vector2 aimDir;
+                float tHit;
+                bool solved = PredictionUtils.TryFirstOrderIntercept(
+                    (Vector2)selfPos,
+                    bestProjectileSpeed,
+                    (Vector2)targetPos,
+                    targetMecha.WorldVelocity2D,
+                    out aimDir,
+                    out tHit
+                );
+                if (solved && aimDir.sqrMagnitude > 1e-6f)
+                {
+                    desiredAim = new Vector3(aimDir.x, aimDir.y, 0f);
+                }
+            }
+            return desiredAim;
         }
     }
 }

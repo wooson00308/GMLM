@@ -17,6 +17,7 @@ namespace GMLM.Game
         public float IncomingTTI { get; private set; } = float.PositiveInfinity;
 		public Vector2 IncomingOrigin { get; private set; }
 		public Vector2 IncomingVelocity { get; private set; }
+        public bool IncomingIsHighThreat { get; private set; } = false;
 
         private void Awake()
         {
@@ -43,37 +44,76 @@ namespace GMLM.Game
 			IncomingDir = Vector2.zero;
 			IncomingOrigin = Vector2.zero;
 			IncomingVelocity = Vector2.zero;
+            IncomingIsHighThreat = false;
 
             var center = (Vector2)transform.position;
             var hits = Physics2D.OverlapCircleAll(center, _senseRadius, _projectileMask);
+            
+            // 두 단계 스캔: 고위협 우선, 없으면 일반
+            float closestTTI = float.PositiveInfinity;
+            float closestHighThreatTTI = float.PositiveInfinity;
+            Projectile closestProj = null;
+            Projectile closestHighThreatProj = null;
+            
             foreach (var h in hits)
             {
                 var proj = h.GetComponent<Projectile>();
                 if (proj == null) continue;
-                if (_mecha != null && proj.ShooterTeam == _mecha.TeamId) continue; // 아군 무시 (Mecha 없으면 스킵)
+                if (_mecha != null && proj.ShooterTeam == _mecha.TeamId) continue;
 
                 // 상대 위치/속도
                 Vector2 r = (Vector2)proj.transform.position - center;
                 Vector2 v = proj.DirectionXY * proj.Speed;
                 if (v.sqrMagnitude <= 1e-6f) continue;
-                // 다가오는지 확인
-                if (Vector2.Dot(r, v) >= 0f) continue;
+                if (Vector2.Dot(r, v) >= 0f) continue; // 멀어지는 중
 
-                float tStar = -Vector2.Dot(r, v) / v.sqrMagnitude; // 최소 근접 시간
+                float tStar = -Vector2.Dot(r, v) / v.sqrMagnitude;
 					if (tStar < 0f) continue;
                 Vector2 closest = r + v * tStar;
                 float dMin = closest.magnitude;
                 float hitRadius = _mechaRadius + _projectileRadius;
+                
                 if (dMin <= hitRadius)
                 {
-                    if (tStar < IncomingTTI)
+                    // 고위협 투사체 우선 추적
+                    if (proj.IsHighThreat)
                     {
-							IncomingTTI = tStar;
-							IncomingDir = v.normalized; // 투사체 진행 방향
-							IncomingOrigin = (Vector2)proj.transform.position;
-							IncomingVelocity = v;
+                        if (tStar < closestHighThreatTTI)
+                        {
+                            closestHighThreatTTI = tStar;
+                            closestHighThreatProj = proj;
+                        }
+                    }
+                    else
+                    {
+                        if (tStar < closestTTI)
+                        {
+                            closestTTI = tStar;
+                            closestProj = proj;
+                        }
                     }
                 }
+            }
+            
+            // 고위협이 있으면 최우선
+            if (closestHighThreatProj != null)
+            {
+                IncomingTTI = closestHighThreatTTI;
+                Vector2 v = closestHighThreatProj.DirectionXY * closestHighThreatProj.Speed;
+                IncomingDir = v.normalized;
+                IncomingOrigin = (Vector2)closestHighThreatProj.transform.position;
+                IncomingVelocity = v;
+                IncomingIsHighThreat = true;
+            }
+            // 없으면 일반 투사체
+            else if (closestProj != null)
+            {
+                IncomingTTI = closestTTI;
+                Vector2 v = closestProj.DirectionXY * closestProj.Speed;
+                IncomingDir = v.normalized;
+                IncomingOrigin = (Vector2)closestProj.transform.position;
+                IncomingVelocity = v;
+                IncomingIsHighThreat = false;
             }
         }
 
