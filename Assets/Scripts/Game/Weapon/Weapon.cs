@@ -27,6 +27,15 @@ namespace GMLM.Game
 		[ShowIf("IsRanged")]
 		[SerializeField, Tooltip("발사 시 ±각도로 무작위 편차(도)"), Range(0f, 180f)] private float _spreadDeg = 2.5f;
 
+		[Header("Burst Fire")]
+		[SerializeField, Tooltip("연사(버스트) 모드 활성화")] private bool _burstMode = false;
+		[ShowIf("IsBurstEnabled")]
+		[SerializeField, Tooltip("한 번 발사 시 나가는 탄환 수"), MinValue(1)] private int _burstCount = 3;
+		[ShowIf("IsBurstEnabled")]
+		[SerializeField, Tooltip("버스트 내 발사 간격 (초)"), MinValue(0.01f)] private float _burstInterval = 0.1f;
+		[ShowIf("IsBurstEnabled")]
+		[SerializeField, Tooltip("버스트 완료 후 다음 버스트까지 추가 대기시간 (초)"), MinValue(0f)] private float _burstCooldown = 0.5f;
+
         // Optional legacy-like fields (not used directly by logic yet)
         public WeaponType Type { get { return _type; } }
         public int Damage { get; private set; }
@@ -37,9 +46,17 @@ namespace GMLM.Game
         public int Accuracy { get; private set; }
 
         private float _cooldownTimer;
+        
+        // Burst fire state management
+        private bool _isBurstInProgress = false;
+        private int _currentBurstShot = 0;
+        private float _burstTimer = 0f;
+        private Mecha _burstSelf;
+        private Mecha _burstTarget;
 
-        // Odin helper
+        // Odin helper methods
         private bool IsRanged => _type == WeaponType.Ranged;
+        private bool IsBurstEnabled => _burstMode && IsRanged;
 
         public float AttackRange => _range;
         public float RemainingCooldown => Mathf.Max(0f, _cooldownTimer);
@@ -47,12 +64,67 @@ namespace GMLM.Game
 		// Exposed descriptors for aiming logic (read-only)
 		public float ProjectileSpeed => _projectilePrefab != null ? _projectilePrefab.Speed : 0f;
 		public bool IsProjectileHoming => _projectilePrefab != null && _projectilePrefab.IsHoming;
+		
+		// Burst mode properties (read-only)
+		public bool IsBurstModeEnabled => _burstMode;
+		public bool IsBurstInProgress => _isBurstInProgress;
+		public int BurstCount => _burstCount;
+		public float BurstInterval => _burstInterval;
 
 		private void Update()
 		{
 			if (_cooldownTimer > 0f)
 			{
 				_cooldownTimer -= Time.deltaTime;
+			}
+			
+			// 버스트 모드 자동 진행 처리
+			if (_isBurstInProgress)
+			{
+				HandleBurstAutoProgress();
+			}
+		}
+		
+		private void HandleBurstAutoProgress()
+		{
+			if (_burstTimer > 0f)
+			{
+				_burstTimer -= Time.deltaTime;
+				return;
+			}
+			
+			// 다음 발사할 탄이 있는지 확인
+			if (_currentBurstShot < _burstCount)
+			{
+				// 타겟과 발사자 유효성 검증
+				if (_burstSelf == null || _burstTarget == null || !_burstTarget.IsAlive || 
+					_burstSelf.TeamId == _burstTarget.TeamId)
+				{
+					CompleteBurst();
+					return;
+				}
+				
+				// 사거리 재확인
+				float distance = Vector3.Distance(_burstSelf.transform.position, _burstTarget.transform.position);
+				if (distance > _range)
+				{
+					CompleteBurst();
+					return;
+				}
+				
+				// 다음 발사 실행
+				FireProjectile(_burstSelf, _burstTarget);
+				_currentBurstShot++;
+				
+				// 다음 발사까지의 간격 설정 또는 버스트 완료
+				if (_currentBurstShot < _burstCount)
+				{
+					_burstTimer = _burstInterval;
+				}
+				else
+				{
+					CompleteBurst();
+				}
 			}
 		}
 
@@ -67,12 +139,79 @@ namespace GMLM.Game
         {
             if (self == null || target == null || !target.IsAlive) return false;
             if (_cooldownTimer > 0f) return false;
+            if (_isBurstInProgress) return false; // 버스트 진행 중에는 새로운 공격 불가
             if (self.TeamId == target.TeamId) return false;
 
             float distance = Vector3.Distance(self.transform.position, target.transform.position);
             if (distance > _range) return false;
 
+            // 버스트 모드와 단발 모드 구분 처리
+            if (IsBurstEnabled)
+            {
+                // 버스트 발사 시작
+                StartBurstFire(self, target);
+                return true;
+            }
+            else
+            {
+                // 단발 발사
+                return FireSingleShot(self, target);
+            }
+        }
+        
+        private void StartBurstFire(Mecha self, Mecha target)
+        {
+            _isBurstInProgress = true;
+            _currentBurstShot = 0;
+            _burstTimer = 0f;
+            _burstSelf = self;
+            _burstTarget = target;
+            
+            // 첫 번째 발사 즉시 실행
+            FireProjectile(self, target);
+            _currentBurstShot++;
+            
+            // 다음 발사까지의 간격 설정
+            if (_currentBurstShot < _burstCount)
+            {
+                _burstTimer = _burstInterval;
+            }
+            else
+            {
+                // 버스트 완료 (단발 버스트인 경우)
+                CompleteBurst();
+            }
+        }
+        
+        private void CompleteBurst()
+        {
+            _isBurstInProgress = false;
+            _currentBurstShot = 0;
+            _burstTimer = 0f;
+            _burstSelf = null;
+            _burstTarget = null;
+            
+            // 버스트 완료 후 쿨다운 설정 (기본 공격속도 + 버스트 쿨다운)
+            float atkSpd = Mathf.Max(0.01f, _attackSpeed);
+            _cooldownTimer = (1f / atkSpd) + _burstCooldown;
+        }
+        
+        private bool FireSingleShot(Mecha self, Mecha target)
+        {
+            FireProjectile(self, target);
+            
+            // 단발 쿨다운 설정
+            float atkSpd = Mathf.Max(0.01f, _attackSpeed);
+            _cooldownTimer = 1f / atkSpd;
+            
+            return true;
+        }
+        
+        private void FireProjectile(Mecha self, Mecha target)
+        {
             int damage = Mathf.Max(0, _attackPower);
+            
+            // 발사 이펙트
             if (_fireEffect != null)
             {
                 var parent = _muzzle != null ? _muzzle : self.transform;
@@ -81,44 +220,40 @@ namespace GMLM.Game
                 var fx = Instantiate(_fireEffect, spawnPos, spawnRot);
                 fx.transform.SetParent(parent);
             }
+            
             if (_type == WeaponType.Melee)
             {
                 target.TakeDamage(damage);
             }
-			else
+            else
             {
-				if (_projectilePrefab == null)
+                if (_projectilePrefab == null)
                 {
                     // Fallback to hitscan if no projectile prefab assigned
                     target.TakeDamage(damage);
                 }
-				else
-				{
-					// Fire strictly along current muzzle orientation. Predictive aiming is handled upstream (AttackAction)
-					var spawnPos = (_muzzle != null ? _muzzle.position : self.transform.position);
-					var spawnRot = (_muzzle != null ? _muzzle.rotation : self.transform.rotation);
-					var proj = Instantiate(_projectilePrefab, spawnPos, spawnRot);
-					if (proj.IsHoming)
-					{
-						proj.Initialize(target.transform, self.TeamId, damage);
-					}
-					else
-					{
-						// derive direction from current muzzle, then apply small spread
-						Vector3 dir = spawnRot * Vector3.up; dir.z = 0f;
-						if (dir.sqrMagnitude <= 1e-6f) dir = Vector3.right;
-						dir.Normalize();
-						float yaw = Random.Range(-_spreadDeg, _spreadDeg);
-						Vector3 spreadDir = (Quaternion.Euler(0f, 0f, yaw) * dir).normalized;
-						proj.InitializeWithDirection(new Vector2(spreadDir.x, spreadDir.y), self.TeamId, damage);
-					}
-				}
+                else
+                {
+                    // Fire strictly along current muzzle orientation. Predictive aiming is handled upstream (AttackAction)
+                    var spawnPos = (_muzzle != null ? _muzzle.position : self.transform.position);
+                    var spawnRot = (_muzzle != null ? _muzzle.rotation : self.transform.rotation);
+                    var proj = Instantiate(_projectilePrefab, spawnPos, spawnRot);
+                    if (proj.IsHoming)
+                    {
+                        proj.Initialize(target.transform, self.TeamId, damage);
+                    }
+                    else
+                    {
+                        // derive direction from current muzzle, then apply small spread
+                        Vector3 dir = spawnRot * Vector3.up; dir.z = 0f;
+                        if (dir.sqrMagnitude <= 1e-6f) dir = Vector3.right;
+                        dir.Normalize();
+                        float yaw = Random.Range(-_spreadDeg, _spreadDeg);
+                        Vector3 spreadDir = (Quaternion.Euler(0f, 0f, yaw) * dir).normalized;
+                        proj.InitializeWithDirection(new Vector2(spreadDir.x, spreadDir.y), self.TeamId, damage);
+                    }
+                }
             }
-
-			float atkSpd = Mathf.Max(0.01f, _attackSpeed);
-			_cooldownTimer = 1f / atkSpd;
-			// no spread accumulation; single-field spread only
-            return true;
         }
     }
 }

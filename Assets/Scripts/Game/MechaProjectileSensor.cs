@@ -18,6 +18,10 @@ namespace GMLM.Game
 		public Vector2 IncomingOrigin { get; private set; }
 		public Vector2 IncomingVelocity { get; private set; }
         public bool IncomingIsHighThreat { get; private set; } = false;
+        
+        // 호밍 투사체 대응을 위한 추가 정보
+        public bool IncomingIsHoming { get; private set; } = false;
+        public float IncomingProjectileSpeed { get; private set; } = 0f;
 
         private void Awake()
         {
@@ -45,6 +49,8 @@ namespace GMLM.Game
 			IncomingOrigin = Vector2.zero;
 			IncomingVelocity = Vector2.zero;
             IncomingIsHighThreat = false;
+            IncomingIsHoming = false;
+            IncomingProjectileSpeed = 0f;
 
             var center = (Vector2)transform.position;
             var hits = Physics2D.OverlapCircleAll(center, _senseRadius, _projectileMask);
@@ -104,6 +110,8 @@ namespace GMLM.Game
                 IncomingOrigin = (Vector2)closestHighThreatProj.transform.position;
                 IncomingVelocity = v;
                 IncomingIsHighThreat = true;
+                IncomingIsHoming = closestHighThreatProj.IsHoming;
+                IncomingProjectileSpeed = closestHighThreatProj.Speed;
             }
             // 없으면 일반 투사체
             else if (closestProj != null)
@@ -114,6 +122,8 @@ namespace GMLM.Game
                 IncomingOrigin = (Vector2)closestProj.transform.position;
                 IncomingVelocity = v;
                 IncomingIsHighThreat = false;
+                IncomingIsHoming = closestProj.IsHoming;
+                IncomingProjectileSpeed = closestProj.Speed;
             }
         }
 

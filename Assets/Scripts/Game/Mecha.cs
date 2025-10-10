@@ -74,6 +74,12 @@ namespace GMLM.Game
         public float EnergyRegenPerSec => _energyRegenPerSec;
         public float EnergyRegenDelay => _energyRegenDelay;
         public IReadOnlyList<Weapon> WeaponsAll => _weaponsAll;
+        
+        // Dash parameters for AI calculations
+        public float DashDistance => _dashDistance;
+        public float DashSpeed => _dashSpeed;
+        public float DashCooldown => _dashCooldown;
+        public float DashEnergyCost => _dashEnergyCost;
 
         // 내부 상태: 현재 이동 속도(스칼라)
         private float _currentSpeed = 0f;
