@@ -57,6 +57,10 @@ PrefabInstance:
       value: 0.08
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _isRotateToTarget
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _projectilePrefab
       value: 
       objectReference: {fileID: 2822874175669502952, guid: fa659fb344de82244bc848d9f25aedbf, type: 3}

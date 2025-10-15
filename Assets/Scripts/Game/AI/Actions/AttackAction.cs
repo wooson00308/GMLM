@@ -59,18 +59,15 @@ namespace GMLM.Game
                 return new UniTask<NodeStatus>(NodeStatus.Failure);
             }
 
-            // AC6 스타일 하드 락온: 타겟 현재 위치로 단순 조준
+            // 예측 조준: 타겟의 이동을 고려한 조준
             Vector3 selfPos = selfTr.position; selfPos.z = 0f;
             Vector3 tgtPos = targetGo.transform.position; tgtPos.z = 0f;
-            Vector3 desiredAim = (tgtPos - selfPos); desiredAim.z = 0f;
-
-            // [주석처리] 예측 조준 - 변태/뉴타입/핵쟁이 전용 (수동 조준 모드에서만 활성화 검토)
-            // 기본 하드 락온에서는 현재 위치만 추적. 유도탄은 Projectile.IsHoming으로 자체 추적
-            //desiredAim = ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
+            Vector3 desiredAim = ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
 
             if (desiredAim.sqrMagnitude > 1e-6f)
             {
                 desiredAim.Normalize();
+                // 예측 벡터를 직접 사용하여 조준 (방향 벡터를 위치로 변환하지 않음)
                 selfMecha.FaceTowards(selfPos + desiredAim * 2f);
             }
 
@@ -92,27 +89,31 @@ namespace GMLM.Game
         // [예측 조준 유틸] 고급 AI/플레이어 수동 조준용 - 향후 옵션으로 활성화 가능
         private Vector3 ComputePredictiveAim(Vector3 selfPos, Vector3 targetPos, Mecha selfMecha, Mecha targetMecha)
         {
+            // 기본값: 현재 위치 조준
             Vector3 desiredAim = (targetPos - selfPos);
+
+            // 예측 조준은 "비유도 탄" 기준으로만 판단한다.
+            // 혼합 장비(유도+비유도)에서도 비유도 무기를 위해 항상 예측을 시도해야 한다.
             var weaponsRO = selfMecha.WeaponsAll;
-            float bestProjectileSpeed = 0f;
-            bool anyHoming = false;
+            float bestNonHomingSpeed = 0f;
             if (weaponsRO != null)
             {
                 for (int i = 0; i < weaponsRO.Count; i++)
                 {
                     var w = weaponsRO[i];
                     if (w == null) continue;
-                    anyHoming |= w.IsProjectileHoming;
-                    bestProjectileSpeed = Mathf.Max(bestProjectileSpeed, w.ProjectileSpeed);
+                    if (w.IsProjectileHoming) continue; // 유도탄은 자체 추적, 예측 불필요
+                    bestNonHomingSpeed = Mathf.Max(bestNonHomingSpeed, w.ProjectileSpeed);
                 }
             }
-            if (!anyHoming && bestProjectileSpeed > 0.01f)
+
+            if (bestNonHomingSpeed > 0.01f)
             {
                 Vector2 aimDir;
                 float tHit;
                 bool solved = PredictionUtils.TryFirstOrderIntercept(
                     (Vector2)selfPos,
-                    bestProjectileSpeed,
+                    bestNonHomingSpeed,
                     (Vector2)targetPos,
                     targetMecha.WorldVelocity2D,
                     out aimDir,

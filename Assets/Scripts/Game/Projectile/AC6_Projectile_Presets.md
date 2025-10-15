@@ -191,3 +191,5 @@ Max Tracking Angle Deg: 150
 생성일: 2025-10-09
 버전: AC6-Style v1.0
 
+
+

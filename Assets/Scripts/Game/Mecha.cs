@@ -193,6 +193,15 @@ namespace GMLM.Game
         {
             _weaponsAll.Clear();
             GetComponentsInChildren(true, _weaponsAll);
+			// Ensure MechaAnimation updates internal weapon presence caches (hands/external)
+			if (_mechaAnimation == null)
+			{
+				_mechaAnimation = GetComponentInChildren<MechaAnimation>(true);
+			}
+			if (_mechaAnimation != null)
+			{
+				_mechaAnimation.RefreshWeaponPresence();
+			}
         }
 
         public void InitializeStats(int maxHp, float moveSpeed, float attackSpeed, int attackPower)

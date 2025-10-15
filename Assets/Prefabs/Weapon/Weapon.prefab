@@ -138,8 +138,13 @@ MonoBehaviour:
   _attackPower: 2
   _attackSpeed: 8
   _range: 9
+  _isRotateToTarget: 0
   _type: 1
   _projectilePrefab: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
   _muzzle: {fileID: 3994074217891386108}
   _fireEffect: {fileID: 400002, guid: eb553b67921c92649ac7dbbc561e2047, type: 3}
   _spreadDeg: 5
+  _burstMode: 0
+  _burstCount: 3
+  _burstInterval: 0.1
+  _burstCooldown: 0.5

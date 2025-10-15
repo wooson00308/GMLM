@@ -14,6 +14,7 @@ namespace GMLM.Game
         [SerializeField, MinValue(0)] private int _attackPower = 10;
         [SerializeField, MinValue(0.01f)] private float _attackSpeed = 1.0f; // attacks/sec
         [SerializeField, MinValue(0f)] private float _range = 8f; // meters
+        [SerializeField] private bool _isRotateToTarget = false;
 
         [Header("Mode")]
         [SerializeField] private WeaponType _type = WeaponType.Ranged;
@@ -58,6 +59,7 @@ namespace GMLM.Game
         private bool IsRanged => _type == WeaponType.Ranged;
         private bool IsBurstEnabled => _burstMode && IsRanged;
 
+        public bool IsRotateToTarget => _isRotateToTarget;
         public float AttackRange => _range;
         public float RemainingCooldown => Mathf.Max(0f, _cooldownTimer);
 

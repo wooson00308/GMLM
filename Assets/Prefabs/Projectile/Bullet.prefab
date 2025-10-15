@@ -10,7 +10,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5266311488828407524, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: m_Name
-      value: Projectile
+      value: Bullet
+      objectReference: {fileID: 0}
+    - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
+      propertyPath: _speed
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 7702467195032771395, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: m_LocalPosition.x

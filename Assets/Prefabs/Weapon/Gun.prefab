@@ -12,6 +12,14 @@ PrefabInstance:
       propertyPath: _range
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _attackSpeed
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _isRotateToTarget
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7535945023518076615, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

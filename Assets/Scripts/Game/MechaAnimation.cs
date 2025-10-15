@@ -30,6 +30,9 @@ namespace GMLM.Game
 		[SerializeField, Range(0.3f, 0.95f), Tooltip("이탈 비율(예: 0.65 → 65%)")] private float _assistExitFrac = 0.65f;
 		[SerializeField, Tooltip("보조 회전 진입 지연(초)")] private float _assistDelaySec = 0.05f;
 
+		[Header("External Weapon Rotation")]
+		[SerializeField, Tooltip("손 하위가 아닌 무기의 회전 속도(deg/sec)")] private float _externalWeaponTurnSpeed = 900f;
+
         [SerializeField] private GameObject _destroyEffect;
 
 		// Cached base local Z for preserving authored rest pose
@@ -42,6 +45,9 @@ namespace GMLM.Game
 		private bool _rightHasWeapon;
 		private bool _assistActive;
 		private float _assistTimer;
+
+		// Cached list of weapons that are NOT under left/right hand
+		private readonly List<Weapon> _externalWeapons = new List<Weapon>();
 
 		[Header("Thrusters")]
 		[SerializeField, Tooltip("버니어 위치 리스트")] private List<Transform> _thrusterPoints;
@@ -66,6 +72,23 @@ namespace GMLM.Game
 			{
 				SetupDashFxInstances(_dashFxPrefab);
 			}
+		}
+
+		private static void UpdateYawLocal(Transform t, float baseZ, float maxYaw, float turnSpeedDeg, float deltaDeg)
+		{
+			if (t == null || maxYaw <= 0f) return;
+			float clamped = Mathf.Clamp(deltaDeg, -maxYaw, maxYaw);
+			float currentZ = t.localEulerAngles.z;
+			float targetZ = baseZ + clamped;
+			float nextZ = Mathf.MoveTowardsAngle(currentZ, targetZ, turnSpeedDeg * Time.deltaTime);
+			t.localRotation = Quaternion.Euler(0f, 0f, nextZ);
+		}
+
+		private void TryUpdateHand(Transform hand, bool gateEnabled, bool hasWeapon, float baseZ, float maxYaw, float turnSpeedDeg, float deltaDeg)
+		{
+			if (hand == null || maxYaw <= 0f) return;
+			if (gateEnabled && !hasWeapon) return;
+			UpdateYawLocal(hand, baseZ, maxYaw, turnSpeedDeg, deltaDeg);
 		}
 
 		private void Update()
@@ -139,6 +162,38 @@ namespace GMLM.Game
 		{
 			_leftHasWeapon = HasWeaponUnder(_leftHand);
 			_rightHasWeapon = HasWeaponUnder(_rightHand);
+			RefreshExternalWeapons();
+		}
+
+		private void RefreshExternalWeapons()
+		{
+			_externalWeapons.Clear();
+			var mecha = GetComponentInParent<Mecha>();
+			if (mecha != null && mecha.WeaponsAll != null)
+			{
+				for (int i = 0; i < mecha.WeaponsAll.Count; i++)
+				{
+					var w = mecha.WeaponsAll[i];
+					if (w == null) continue;
+					// Exclude weapons parented under hands
+					if (_leftHand != null && w.transform.IsChildOf(_leftHand)) continue;
+					if (_rightHand != null && w.transform.IsChildOf(_rightHand)) continue;
+					_externalWeapons.Add(w);
+				}
+			}
+			else
+			{
+				// Fallback: scan children
+				var all = GetComponentsInChildren<Weapon>(true);
+				for (int i = 0; i < all.Length; i++)
+				{
+					var w = all[i];
+					if (w == null) continue;
+					if (_leftHand != null && w.transform.IsChildOf(_leftHand)) continue;
+					if (_rightHand != null && w.transform.IsChildOf(_rightHand)) continue;
+					_externalWeapons.Add(w);
+				}
+			}
 		}
 
 		/// <summary>
@@ -394,33 +449,38 @@ namespace GMLM.Game
 			float deltaDeg = Vector2.SignedAngle(bodyDir, targetDir);
 
 			// Head
-			if (_head != null && _maxHeadYaw > 0f)
-			{
-				float clamped = Mathf.Clamp(deltaDeg, -_maxHeadYaw, _maxHeadYaw);
-				float currentZ = _head.localEulerAngles.z;
-				float targetZ = _headBaseLocalZ + clamped;
-				float nextZ = Mathf.MoveTowardsAngle(currentZ, targetZ, _headTurnSpeed * Time.deltaTime);
-				_head.localRotation = Quaternion.Euler(0f, 0f, nextZ);
-			}
+			UpdateYawLocal(_head, _headBaseLocalZ, _maxHeadYaw, _headTurnSpeed, deltaDeg);
 
 			// Left Hand (gated by weapon presence if enabled)
-			if (_leftHand != null && _maxLeftHandYaw > 0f && (!_rotateLeftIfWeaponOnly || _leftHasWeapon))
-			{
-				float clamped = Mathf.Clamp(deltaDeg, -_maxLeftHandYaw, _maxLeftHandYaw);
-				float currentZ = _leftHand.localEulerAngles.z;
-				float targetZ = _leftBaseLocalZ + clamped;
-				float nextZ = Mathf.MoveTowardsAngle(currentZ, targetZ, _leftHandTurnSpeed * Time.deltaTime);
-				_leftHand.localRotation = Quaternion.Euler(0f, 0f, nextZ);
-			}
+			TryUpdateHand(_leftHand, _rotateLeftIfWeaponOnly, _leftHasWeapon, _leftBaseLocalZ, _maxLeftHandYaw, _leftHandTurnSpeed, deltaDeg);
 
 			// Right Hand (gated by weapon presence if enabled)
-			if (_rightHand != null && _maxRightHandYaw > 0f && (!_rotateRightIfWeaponOnly || _rightHasWeapon))
+			TryUpdateHand(_rightHand, _rotateRightIfWeaponOnly, _rightHasWeapon, _rightBaseLocalZ, _maxRightHandYaw, _rightHandTurnSpeed, deltaDeg);
+
+			// External weapons: rotate towards target only if they opt-in via IsRotateToTarget
+			if (_externalWeapons.Count > 0)
 			{
-				float clamped = Mathf.Clamp(deltaDeg, -_maxRightHandYaw, _maxRightHandYaw);
-				float currentZ = _rightHand.localEulerAngles.z;
-				float targetZ = _rightBaseLocalZ + clamped;
-				float nextZ = Mathf.MoveTowardsAngle(currentZ, targetZ, _rightHandTurnSpeed * Time.deltaTime);
-				_rightHand.localRotation = Quaternion.Euler(0f, 0f, nextZ);
+				for (int i = 0; i < _externalWeapons.Count; i++)
+				{
+					var w = _externalWeapons[i];
+					if (w == null) continue;
+					if (!w.IsRotateToTarget) continue;
+					Transform wt = w.transform;
+					Vector2 from = wt.up;
+					Vector2 to = targetDir;
+					if (to.sqrMagnitude <= 0f) continue;
+					from.Normalize(); to.Normalize();
+					float stepDeg = Mathf.Max(0f, _externalWeaponTurnSpeed) * Time.deltaTime;
+					// Rotate around Z on 2D plane, then apply to up axis
+					Vector3 rotated = Vector3.RotateTowards(from, to, Mathf.Deg2Rad * stepDeg, 0f);
+					if (rotated.sqrMagnitude > 0f)
+					{
+						// Align 'up' to facing; maintain orthonormal basis
+						Vector3 newUp = rotated.normalized;
+						Vector3 newRight = new Vector3(newUp.y, -newUp.x, 0f); // 2D perpendicular
+						wt.right = newRight;
+					}
+				}
 			}
 		}
 
