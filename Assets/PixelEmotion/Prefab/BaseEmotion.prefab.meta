@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e32535d9028994ac2a4bc19ca5aa7a57
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 221337
+  packageName: PixelArt Animated Emoticon
+  packageVersion: 1.0
+  assetPath: Assets/PixelEmotion/Prefab/BaseEmotion.prefab
+  uploadId: 497446

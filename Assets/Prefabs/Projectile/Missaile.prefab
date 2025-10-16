@@ -336,7 +336,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: _lifeTime
-      value: 1.6
+      value: 1.45
       objectReference: {fileID: 0}
     - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: _hitEffect

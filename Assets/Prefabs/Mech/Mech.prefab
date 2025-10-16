@@ -326,9 +326,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Mecha
   _weaponsAll: []
   _teamId: 1
-  _maxHp: 100
-  _currentHp: 100
-  _moveSpeed: 8
+  _maxHp: 600
+  _currentHp: 600
+  _moveSpeed: 12
   _acceleration: 30
   _deceleration: 45
   _turnRateDeg: 280
@@ -555,7 +555,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3081959213087742473}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: -0.3420201, w: 0.9396927}
   m_LocalPosition: {x: -0.616, y: 0.132, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -563,7 +563,7 @@ Transform:
   - {fileID: 3860542791044051346}
   - {fileID: 845395568033658064}
   m_Father: {fileID: 8504011049890399853}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -40}
 --- !u!1 &3614616280253514283
 GameObject:
   m_ObjectHideFlags: 0

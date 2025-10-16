@@ -74,7 +74,7 @@ namespace GMLM.Game
         public float EnergyRegenPerSec => _energyRegenPerSec;
         public float EnergyRegenDelay => _energyRegenDelay;
         public IReadOnlyList<Weapon> WeaponsAll => _weaponsAll;
-        
+        public Pilot Pilot => _pilot;
         // Dash parameters for AI calculations
         public float DashDistance => _dashDistance;
         public float DashSpeed => _dashSpeed;

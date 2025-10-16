@@ -42,11 +42,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _burstCount
-      value: 3
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _attackPower
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _attackSpeed
-      value: 0.1
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _burstCooldown

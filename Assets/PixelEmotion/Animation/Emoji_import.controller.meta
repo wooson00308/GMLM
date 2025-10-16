@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ec07522af65234daba2aa0fb66662095
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 221337
+  packageName: PixelArt Animated Emoticon
+  packageVersion: 1.0
+  assetPath: Assets/PixelEmotion/Animation/Emoji_import.controller
+  uploadId: 497446

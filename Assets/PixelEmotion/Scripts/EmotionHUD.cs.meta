@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: cc60f62c0b96947e1b6bd230f06e43d6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 221337
+  packageName: PixelArt Animated Emoticon
+  packageVersion: 1.0
+  assetPath: Assets/PixelEmotion/Scripts/EmotionHUD.cs
+  uploadId: 497446
