@@ -326,21 +326,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Mecha
   _weaponsAll: []
   _teamId: 1
-  _maxHp: 600
-  _currentHp: 600
-  _moveSpeed: 12
+  _maxHp: 250
+  _currentHp: 250
+  _moveSpeed: 8
   _acceleration: 30
   _deceleration: 45
   _turnRateDeg: 280
+  _maxStagger: 100
+  _staggerDecayRate: 20
+  _staggerDuration: 2.5
+  _staggerDamageMultiplier: 1.5
+  _staggerRecoveryDelay: 0.6
   _maxEnergy: 100
   _currentEnergy: 100
   _energyRegenPerSec: 20
   _energyRegenDelay: 1
   _mechaAnimation: {fileID: 0}
-  _dashDistance: 5
-  _dashSpeed: 32
-  _dashCooldown: 0.1
-  _dashEnergyCost: 10
+  _dashDistance: 6.5
+  _dashSpeed: 28
+  _dashCooldown: 0.3
+  _dashEnergyCost: 20
 --- !u!114 &5560646582550016971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -369,7 +374,8 @@ MonoBehaviour:
   _assistExitFrac: 0.65
   _assistDelaySec: 0.05
   _externalWeaponTurnSpeed: 360
-  _destroyEffect: {fileID: 100006, guid: 1d7af691032284f46942451650cde8f8, type: 3}
+  _destroyEffect: {fileID: 9030409915998020003, guid: f14715f05977cb547a396e9aad651d51, type: 3}
+  _staggerEffect: {fileID: 9030409915998020003, guid: f14715f05977cb547a396e9aad651d51, type: 3}
   _thrusterPoints:
   - {fileID: 8553861700197142235}
   - {fileID: 317637246429266387}
@@ -1115,6 +1121,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2080156764363793701}
     m_Modifications:
+    - target: {fileID: 736259403630796848, guid: e245df39e305a2e47a9ee2255cf77c73, type: 3}
+      propertyPath: _spreadDeg
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 736259403630796848, guid: e245df39e305a2e47a9ee2255cf77c73, type: 3}
       propertyPath: _projectilePrefab
       value: 

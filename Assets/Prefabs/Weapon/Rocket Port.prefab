@@ -38,7 +38,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _spreadDeg
-      value: 20
+      value: 45
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _burstCount
@@ -46,11 +46,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _attackPower
-      value: 12
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _attackSpeed
       value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _impactValue
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _burstCooldown
@@ -58,7 +62,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _burstInterval
-      value: 0.08
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _isRotateToTarget

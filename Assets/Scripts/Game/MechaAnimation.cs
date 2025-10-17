@@ -35,6 +35,8 @@ namespace GMLM.Game
 
         [SerializeField] private GameObject _destroyEffect;
 
+		[SerializeField] private GameObject _staggerEffect;
+
 		// Cached base local Z for preserving authored rest pose
 		private float _headBaseLocalZ;
 		private float _leftBaseLocalZ;
@@ -141,9 +143,17 @@ namespace GMLM.Game
         {
             if (_destroyEffect != null)
             {
-                Instantiate(_destroyEffect, transform.position, transform.rotation);
+                Instantiate(_destroyEffect, transform.position, _destroyEffect.transform.rotation);
             }
         }
+
+		public void PlayStaggerEffect()
+		{
+			if (_staggerEffect != null)
+			{
+				var fx = Instantiate(_staggerEffect, transform.position, _staggerEffect.transform.rotation);
+			}
+		}
 
 		/// <summary>
 		/// 현재 로컬 Z를 기준 자세로 캐시한다.

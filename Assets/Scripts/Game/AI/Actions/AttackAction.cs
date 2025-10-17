@@ -62,7 +62,8 @@ namespace GMLM.Game
             // 예측 조준: 타겟의 이동을 고려한 조준
             Vector3 selfPos = selfTr.position; selfPos.z = 0f;
             Vector3 tgtPos = targetGo.transform.position; tgtPos.z = 0f;
-            Vector3 desiredAim = (tgtPos - selfPos); //ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
+            Vector3 desiredAim = (tgtPos - selfPos); 
+                                //ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
 
             if (desiredAim.sqrMagnitude > 1e-6f)
             {

@@ -29,6 +29,7 @@ namespace GMLM.Game
         
         private Transform _target;
         private int _damage;
+        private int _impactValue;
         private int _shooterTeam;
         private float _timeLeft;
         private float _elapsedTime = 0f; // 발사 후 경과 시간
@@ -52,11 +53,12 @@ namespace GMLM.Game
         }
 
         // 명시적인 초기 방향만 허용
-        public void Initialize(Transform target, int shooterTeam, int damage)
+        public void Initialize(Transform target, int shooterTeam, int damage, int impact = 0)
         {
             _target = target;
             _shooterTeam = shooterTeam;
             _damage = Mathf.Max(0, damage);
+            _impactValue = Mathf.Max(0, impact);
             _timeLeft = _lifeTime;
             _elapsedTime = 0f;
 
@@ -66,12 +68,13 @@ namespace GMLM.Game
         }
 
 		// 비유도 발사: 초기 방향을 직접 지정
-		public void InitializeWithDirection(Vector2 initialDirection, int shooterTeam, int damage)
+		public void InitializeWithDirection(Vector2 initialDirection, int shooterTeam, int damage, int impact = 0)
 		{
 			_target = null;
 			_isHoming = false;
 			_shooterTeam = shooterTeam;
 			_damage = Mathf.Max(0, damage);
+			_impactValue = Mathf.Max(0, impact);
 			_timeLeft = _lifeTime;
             _elapsedTime = 0f;
             Vector3 dir = new Vector3(initialDirection.x, initialDirection.y, 0f);
@@ -114,7 +117,7 @@ namespace GMLM.Game
             {
                 if (_destroyEffect != null)
                 {
-                    Instantiate(_destroyEffect, transform.position, transform.rotation);
+                    Instantiate(_destroyEffect, transform.position, _destroyEffect.transform.rotation);
                 }
                 Destroy(gameObject);
                 return;
@@ -181,10 +184,10 @@ namespace GMLM.Game
             if (mecha == null) return;
             if (!mecha.IsAlive) return;
             if (mecha.TeamId == _shooterTeam) return;
-            mecha.TakeDamage(_damage);
+            mecha.TakeDamage(_damage, _impactValue);
             if (_hitEffect != null)
             {
-                Instantiate(_hitEffect, transform.position, transform.rotation);
+                Instantiate(_hitEffect, transform.position, _hitEffect.transform.rotation);
             }
             Destroy(gameObject);
         }

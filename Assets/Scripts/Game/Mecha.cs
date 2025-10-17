@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
 
 namespace GMLM.Game
 {
@@ -54,6 +55,13 @@ namespace GMLM.Game
         [SerializeField] private float _turnRateDeg = 360f;   // deg/sec, 우측=정면 기준 회전 속도
         // moved to Weapon
 
+        [Header("Stagger System (AC6 Style)")]
+        [SerializeField, MinValue(1)] private int _maxStagger = 1000; // 스태거 임계값
+        [SerializeField, MinValue(0f)] private float _staggerDecayRate = 200f; // 초당 감소량
+        [SerializeField, MinValue(0.1f)] private float _staggerDuration = 2.5f; // 스태거 지속시간
+        [SerializeField, MinValue(1f)] private float _staggerDamageMultiplier = 1.5f; // 스태거 상태 데미지 배율
+        [SerializeField, MinValue(0f), Tooltip("스태거 회복 시작 지연 (피격 시 리셋)")] private float _staggerRecoveryDelay = 0.6f;
+
         [Header("Energy")]
         [SerializeField] private float _maxEnergy = 100f;
         [SerializeField] private float _currentEnergy = 100f;
@@ -80,6 +88,14 @@ namespace GMLM.Game
         public float DashSpeed => _dashSpeed;
         public float DashCooldown => _dashCooldown;
         public float DashEnergyCost => _dashEnergyCost;
+        
+        // Stagger system properties
+        public int MaxStagger => _maxStagger;
+        public float CurrentStagger => _currentStagger;
+        public bool IsStaggered => _isStaggered;
+        public float StaggerProgress => _currentStagger / _maxStagger;
+        public float StaggerRecoveryCooldown => _staggerRecoveryCooldown;
+        public float StaggerDuration => _staggerDuration;
 
         // 내부 상태: 현재 이동 속도(스칼라)
         private float _currentSpeed = 0f;
@@ -87,6 +103,12 @@ namespace GMLM.Game
         // Evade sensor cache
         private Vector2 _incomingDir = Vector2.zero;
         private float _incomingTTI = float.PositiveInfinity;
+        
+        // Stagger system state
+        private float _currentStagger = 0f;
+        private bool _isStaggered = false;
+        private float _staggerTimer = 0f;
+        private float _staggerRecoveryCooldown = 0f; // 회복 지연 타이머
 
         [Header("Animation")]
         [SerializeField] private MechaAnimation _mechaAnimation;
@@ -164,6 +186,9 @@ namespace GMLM.Game
                     _currentEnergy = Mathf.Min(_maxEnergy, _currentEnergy + _energyRegenPerSec * dt);
                 }
             }
+            
+            // Stagger system update
+            UpdateStaggerSystem(dt);
 
             // Death check safety
             if (_currentHp <= 0)
@@ -214,31 +239,48 @@ namespace GMLM.Game
 
         public void TakeDamage(int amount)
         {
+            TakeDamage(amount, 0);
+        }
+        
+        public void TakeDamage(int damage, int impact)
+        {
             if (!IsAlive) return;
-            _currentHp = Mathf.Clamp(_currentHp - Mathf.Max(0, amount), 0, _maxHp);
+            
+            // Apply stagger impact
+            if (impact > 0)
+            {
+                _currentStagger += impact;
+                
+                // Check for stagger threshold
+                if (_currentStagger >= _maxStagger && !_isStaggered)
+                {
+                    EnterStagger();
+                }
+            }
+            
+            // 스태거 회복 지연: 스태거 중이 아니고 게이지가 남아있다면 어떤 피해든 지연 타이머 리셋
+            if (!_isStaggered && _currentStagger > 0f)
+            {
+                _staggerRecoveryCooldown = _staggerRecoveryDelay;
+            }
+            
+            // Apply damage with stagger multiplier
+            int finalDamage = damage;
+            if (_isStaggered)
+            {
+                finalDamage = Mathf.RoundToInt(damage * _staggerDamageMultiplier);
+            }
+            
+            _currentHp = Mathf.Clamp(_currentHp - Mathf.Max(0, finalDamage), 0, _maxHp);
             if (_currentHp <= 0)
             {
                 gameObject.SetActive(false);
             }
         }
 
-        public bool TryAttack(Mecha target)
-        {
-            bool any = false;
-            if (_weaponsAll != null)
-            {
-                for (int i = 0; i < _weaponsAll.Count; i++)
-                {
-                    var w = _weaponsAll[i];
-                    if (w == null) continue;
-                    any |= w.TryAttack(this, target);
-                }
-            }
-            return any;
-        }
-
 		public bool MoveTowards(Vector3 targetPosition)
         {
+            if (_isStaggered) return false; // 스태거 상태에서는 이동 불가
             if (_isDashing) return true; // 대시 중에는 독립 이동 우선
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             Vector3 tgtPos = targetPosition; tgtPos.z = 0f;
@@ -261,6 +303,7 @@ namespace GMLM.Game
 
 		public bool MoveInDirection(Vector3 direction, bool rotateToMovement = true)
         {
+            if (_isStaggered) return false; // 스태거 상태에서는 이동 불가
             if (_isDashing) return true; // 대시 중에는 독립 이동 우선
             Vector3 dir = direction; dir.z = 0f;
             if (dir.sqrMagnitude <= 0f) return false;
@@ -282,6 +325,7 @@ namespace GMLM.Game
 
 		public void FaceTowards(Vector3 targetPosition)
         {
+            if (_isStaggered) return; // 스태거 상태에서는 회전 불가
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             Vector3 tgtPos = targetPosition; tgtPos.z = 0f;
             Vector3 dir = (tgtPos - selfPos);
@@ -349,7 +393,7 @@ namespace GMLM.Game
 
         public bool CanDash()
         {
-            return !_isDashing && _dashCooldownTimer <= 0f && _currentEnergy >= _dashEnergyCost;
+            return !_isStaggered && !_isDashing && _dashCooldownTimer <= 0f && _currentEnergy >= _dashEnergyCost;
         }
 
         public bool TryDash(Vector3 direction)
@@ -376,6 +420,59 @@ namespace GMLM.Game
         public bool TryDashForward()
         {
             return TryDash(transform.right);
+        }
+        #endregion
+        
+        #region Stagger System
+        private void UpdateStaggerSystem(float deltaTime)
+        {
+            if (_isStaggered)
+            {
+                // Update stagger duration timer
+                _staggerTimer -= deltaTime;
+                if (_staggerTimer <= 0f)
+                {
+                    ExitStagger();
+                }
+            }
+            else
+            {
+                // 회복 지연 타이머 감소
+                if (_staggerRecoveryCooldown > 0f)
+                {
+                    _staggerRecoveryCooldown = Mathf.Max(0f, _staggerRecoveryCooldown - deltaTime);
+                }
+
+                // 지연이 끝나면 스태거 게이지 감소 시작
+                if (_staggerRecoveryCooldown <= 0f && _currentStagger > 0f)
+                {
+                    _currentStagger = Mathf.Max(0f, _currentStagger - _staggerDecayRate * deltaTime);
+                }
+            }
+        }
+        
+        private void EnterStagger()
+        {
+            if (_isStaggered) return;
+            _isStaggered = true;
+            _staggerTimer = _staggerDuration;
+            _currentStagger = _maxStagger; // Cap at max when staggered
+            _staggerRecoveryCooldown = 0f; // 스태거 중에는 회복 지연 의미 없음
+            
+            if (!_isStaggered && _mechaAnimation != null)
+            {
+                _mechaAnimation.PlayStaggerEffect();
+            }
+        }
+        
+        private void ExitStagger()
+        {
+            _isStaggered = false;
+            _staggerTimer = 0f;
+            _currentStagger = 0f; // Reset stagger gauge after stagger ends
+            _staggerRecoveryCooldown = _staggerRecoveryDelay; // 회복 시작까지 지연
+            
+            // TODO: Add stagger recovery effects here
         }
         #endregion
     }

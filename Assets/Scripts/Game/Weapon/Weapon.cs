@@ -14,6 +14,7 @@ namespace GMLM.Game
         [SerializeField, MinValue(0)] private int _attackPower = 10;
         [SerializeField, MinValue(0.01f)] private float _attackSpeed = 1.0f; // attacks/sec
         [SerializeField, MinValue(0f)] private float _range = 8f; // meters
+        [SerializeField, MinValue(0)] private int _impactValue = 6; // AC6 style stagger impact
         [SerializeField] private bool _isRotateToTarget = false;
 
         [Header("Mode")]
@@ -62,6 +63,7 @@ namespace GMLM.Game
         public bool IsRotateToTarget => _isRotateToTarget;
         public float AttackRange => _range;
         public float RemainingCooldown => Mathf.Max(0f, _cooldownTimer);
+        public int ImpactValue => _impactValue;
 
 		// Exposed descriptors for aiming logic (read-only)
 		public float ProjectileSpeed => _projectilePrefab != null ? _projectilePrefab.Speed : 0f;
@@ -140,6 +142,7 @@ namespace GMLM.Game
         public bool TryAttack(Mecha self, Mecha target)
         {
             if (self == null || target == null || !target.IsAlive) return false;
+            if (self.IsStaggered) return false; // 스태거 상태에서는 공격 불가
             if (_cooldownTimer > 0f) return false;
             if (_isBurstInProgress) return false; // 버스트 진행 중에는 새로운 공격 불가
             if (self.TeamId == target.TeamId) return false;
@@ -212,6 +215,7 @@ namespace GMLM.Game
         private void FireProjectile(Mecha self, Mecha target)
         {
             int damage = Mathf.Max(0, _attackPower);
+            int impact = Mathf.Max(0, _impactValue);
             
             // 발사 이펙트
             if (_fireEffect != null)
@@ -225,14 +229,14 @@ namespace GMLM.Game
             
             if (_type == WeaponType.Melee)
             {
-                target.TakeDamage(damage);
+                target.TakeDamage(damage, impact);
             }
             else
             {
                 if (_projectilePrefab == null)
                 {
                     // Fallback to hitscan if no projectile prefab assigned
-                    target.TakeDamage(damage);
+                    target.TakeDamage(damage, impact);
                 }
                 else
                 {
@@ -242,7 +246,7 @@ namespace GMLM.Game
                     var proj = Instantiate(_projectilePrefab, spawnPos, spawnRot);
                     if (proj.IsHoming)
                     {
-                        proj.Initialize(target.transform, self.TeamId, damage);
+                        proj.Initialize(target.transform, self.TeamId, damage, impact);
                     }
                     else
                     {
@@ -252,7 +256,7 @@ namespace GMLM.Game
                         dir.Normalize();
                         float yaw = Random.Range(-_spreadDeg, _spreadDeg);
                         Vector3 spreadDir = (Quaternion.Euler(0f, 0f, yaw) * dir).normalized;
-                        proj.InitializeWithDirection(new Vector2(spreadDir.x, spreadDir.y), self.TeamId, damage);
+                        proj.InitializeWithDirection(new Vector2(spreadDir.x, spreadDir.y), self.TeamId, damage, impact);
                     }
                 }
             }

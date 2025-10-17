@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4659540005316484611, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
+      propertyPath: m_Time
+      value: 0.025
+      objectReference: {fileID: 0}
     - target: {fileID: 5266311488828407524, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: m_Name
       value: Bullet
@@ -15,6 +19,10 @@ PrefabInstance:
     - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: _speed
       value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
+      propertyPath: _lifeTime
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 7702467195032771395, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: m_LocalPosition.x

@@ -59,9 +59,9 @@ MonoBehaviour:
   scrollbarBackgroundColor: {r: 1, g: 1, b: 1, a: 0.09803922}
   sliderLabelFont: {fileID: 11400000, guid: 84dd14695854bbc43a5faa24fcf93d0d, type: 2}
   sliderThemeType: 0
-  sliderColor: {r: 1, g: 1, b: 1, a: 1}
+  sliderColor: {r: 1, g: 1, b: 1, a: 0.4}
   sliderBackgroundColor: {r: 1, g: 1, b: 1, a: 0.09803922}
-  sliderLabelColor: {r: 1, g: 1, b: 1, a: 1}
+  sliderLabelColor: {r: 1, g: 1, b: 1, a: 0.4}
   sliderPopupLabelColor: {r: 0.37254903, g: 0.40784314, b: 0.4509804, a: 1}
   sliderHandleColor: {r: 1, g: 1, b: 1, a: 1}
   switchBorderColor: {r: 0.1764706, g: 0.25490198, b: 0.33333334, a: 1}
