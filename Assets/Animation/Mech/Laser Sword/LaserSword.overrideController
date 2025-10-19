@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: LaserSword
+  m_Controller: {fileID: 9100000, guid: 47df1c416dab3e54ca57987785282707, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 74870445bf542c24283dba0906858203, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 3402a0e71cbec424581c7bcd52532f78, type: 2}

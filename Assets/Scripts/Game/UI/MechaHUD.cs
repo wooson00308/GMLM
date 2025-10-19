@@ -21,7 +21,7 @@ namespace GMLM.Game
         [SerializeField] private Camera _camera; // null이면 Camera.main 사용
         [SerializeField] private float _staggerFlashSpeed = 10.0f; // 깜빡임 속도
         [SerializeField] private Color _hpDangerColor = Color.red; // HP 위험 색상
-        [SerializeField] private Color _energyLowColor = Color.cyan; // 에너지 부족 색상
+        [SerializeField] private Color _energyLowColor = Color.red; // 에너지 부족 색상
         [SerializeField] private float _hpDangerThreshold = 0.3f; // HP 위험 임계값 (30%)
         [SerializeField] private float _energyLowThreshold = 0.2f; // 에너지 부족 임계값 (20%)
         private RectTransform _rectTransform;
@@ -34,6 +34,10 @@ namespace GMLM.Game
         [SerializeField] private float _hpPulseDuration = 0.25f; // AP 감소 시 단발성 펄스 시간
         private Tween _hpPulseTween;
         private int _lastHpValue = -1;
+        [SerializeField] private Color _energyPulseColor = Color.cyan; // 에너지 사용 시 펄스 색상
+        [SerializeField] private float _energyPulseDuration = 0.25f; // 에너지 사용 시 단발성 펄스 시간
+        private Tween _energyPulseTween;
+        private float _lastEnergyValue = -1f;
 
         private void Awake()
         {
@@ -59,6 +63,7 @@ namespace GMLM.Game
                 _originalEnergyColor = _enBar.loadingBar.color;
             }
             _lastHpValue = _mecha.CurrentHp;
+            _lastEnergyValue = _mecha.CurrentEnergy;
             
             UpdateUI();
         }
@@ -86,13 +91,24 @@ namespace GMLM.Game
                 }
             }
 
-            // 에너지 부족 색상 변경 (20% 이하)
+            // 에너지 부족 색상 변경 (20% 이하) 및 사용 시 펄스
             if (_enBar.loadingBar != null) {
-                float energyRatio = _mecha.CurrentEnergy / _mecha.MaxEnergy;
-                if (energyRatio <= _energyLowThreshold) {
-                    _enBar.loadingBar.color = _energyLowColor;
-                } else {
-                    _enBar.loadingBar.color = _originalEnergyColor;
+                float currentEnergy = _mecha.CurrentEnergy;
+                
+                // 에너지 사용 감지 및 펄스
+                if (_lastEnergyValue >= 0 && currentEnergy < _lastEnergyValue) {
+                    StartEnergyPulse();
+                }
+                _lastEnergyValue = currentEnergy;
+                
+                // 에너지 색상 변경 (펄스 중에는 트윈이 색상 제어)
+                if (_energyPulseTween == null || !_energyPulseTween.IsActive()) {
+                    float energyRatio = currentEnergy / _mecha.MaxEnergy;
+                    if (energyRatio <= _energyLowThreshold) {
+                        _enBar.loadingBar.color = _energyLowColor; // 20% 이하: 빨강 고정
+                    } else {
+                        _enBar.loadingBar.color = _originalEnergyColor; // 20% 초과: 원본색
+                    }
                 }
             }
 
@@ -198,6 +214,23 @@ namespace GMLM.Game
                 .Append(_apBar.loadingBar.DOColor(startColor, _hpPulseDuration * 0.5f))
                 .OnComplete(() => {
                     _hpPulseTween = null;
+                });
+        }
+
+        private void StartEnergyPulse() {
+            if (_enBar.loadingBar == null) return;
+
+            // 기존 펄스가 있으면 재시작
+            if (_energyPulseTween != null && _energyPulseTween.IsActive()) {
+                _energyPulseTween.Kill(true);
+            }
+
+            Color startColor = _enBar.loadingBar.color;
+            _energyPulseTween = DOTween.Sequence()
+                .Append(_enBar.loadingBar.DOColor(_energyPulseColor, _energyPulseDuration * 0.5f))
+                .Append(_enBar.loadingBar.DOColor(startColor, _energyPulseDuration * 0.5f))
+                .OnComplete(() => {
+                    _energyPulseTween = null;
                 });
         }
 

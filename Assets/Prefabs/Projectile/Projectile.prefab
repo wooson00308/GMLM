@@ -137,7 +137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c52737cd59305c645a076da14a98fab1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Projectile
-  _speed: 45
+  _speed: 32
   _lifeTime: 0.3
   _isHoming: 0
   _hitEffect: {fileID: 100002, guid: 00fedc70b62a31e448e8ccc298257b56, type: 3}
@@ -147,7 +147,7 @@ MonoBehaviour:
   _homingStrength: 1
   _maxTurnRateDeg: 180
   _homingDuration: 5
-  _maxTrackingAngleDeg: 150
+  _maxTrackingAngleDeg: 45
 --- !u!61 &2472490045460397053
 BoxCollider2D:
   m_ObjectHideFlags: 0

@@ -954,7 +954,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2991385597036996642}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1.5, y: 1.5, z: 1}
   m_ConstrainProportionsScale: 0
@@ -992,11 +992,13 @@ MonoBehaviour:
   _offset: {x: 0, y: 0}
   _camera: {fileID: 0}
   _staggerFlashSpeed: 10
-  _hpDangerColor: {r: 1, g: 0, b: 0, a: 1}
-  _energyLowColor: {r: 0, g: 1, b: 1, a: 1}
+  _hpDangerColor: {r: 0.990566, g: 0.5934051, b: 0.5934051, a: 1}
+  _energyLowColor: {r: 1, g: 0, b: 0, a: 1}
   _hpDangerThreshold: 0.3
   _energyLowThreshold: 0.2
   _hpPulseDuration: 0.25
+  _energyPulseColor: {r: 0.7169812, g: 0.7169812, b: 0.7169812, a: 1}
+  _energyPulseDuration: 0.25
 --- !u!1 &3116039702434400231
 GameObject:
   m_ObjectHideFlags: 0
@@ -2370,7 +2372,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: SASHA
+  m_text: HELENA
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}
   m_sharedMaterial: {fileID: 21539420542967178, guid: 4bd810f1cbcb0f446a8f5a31453e243f, type: 2}

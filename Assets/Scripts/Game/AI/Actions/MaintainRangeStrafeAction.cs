@@ -18,6 +18,7 @@ namespace GMLM.Game
         private bool _forceEvadeToggle = false;
 		private float _sinceLastEvade = 0f;
 		private float _evadeMinInterval = 0.4f;
+        
 
         public MaintainRangeStrafeAction(IBlackboard blackboard, string selfKey = "self", string targetKey = "target", 
             float orbitWeight = 0.8f, float margin = 0.5f, 
@@ -56,16 +57,42 @@ namespace GMLM.Game
             if (mecha == null) return new UniTask<NodeStatus>(NodeStatus.Failure);
 
             float desiredRange = 1.5f;
-            var weapons = mecha.WeaponsAll;
-            if (weapons != null)
+            var combatStyle = mecha.Pilot?.CombatStyle ?? CombatStyle.Ranged;
+            var sortedWeapons = mecha.GetWeaponsSortedByCombatStyle(combatStyle);
+
+            // 성향별 사거리 선택 로직
+            if (sortedWeapons != null && sortedWeapons.Count > 0)
             {
-                float longest = 0f;
-                foreach (var w in weapons)
+                Weapon firstRangeKeepingWeapon = null;
+                bool foundValidWeapon = false;
+                
+                // 발사 가능한 사거리 유지 무기 중 첫 번째 선택
+                foreach (var w in sortedWeapons)
                 {
                     if (w == null) continue;
-                    if (w.AttackRange > longest) longest = w.AttackRange;
+                    if (!w.IsRangeKeeping) continue; // 사거리 유지 대상 아님 (로켓런처 등)
+                    
+                    // 첫 번째 사거리 유지 무기 기록 (장전 중이라도)
+                    if (firstRangeKeepingWeapon == null && w.AttackRange > 0f)
+                    {
+                        firstRangeKeepingWeapon = w;
+                    }
+                    
+                    // 장전 중이 아닌 무기 발견 시 즉시 사용
+                    if (!w.IsReloading && w.AttackRange > 0f)
+                    {
+                        desiredRange = w.AttackRange;
+                        foundValidWeapon = true;
+                        break; // 첫 번째 발사 가능한 사거리 유지 무기 발견
+                    }
                 }
-                if (longest > 0f) desiredRange = longest;
+                
+                // 모든 무기가 장전 중일 때: 첫 번째 사거리 유지 무기 사거리 사용
+                // sortedWeapons는 이미 성향별로 정렬되어 있음 (Melee=오름차순, Ranged=내림차순)
+                if (!foundValidWeapon && firstRangeKeepingWeapon != null)
+                {
+                    desiredRange = firstRangeKeepingWeapon.AttackRange;
+                }
             }
 
             Vector3 selfPos = self.position; selfPos.z = 0f;
@@ -75,6 +102,17 @@ namespace GMLM.Game
             if (dist <= Mathf.Epsilon)
             {
                 return new UniTask<NodeStatus>(NodeStatus.Running);
+            }
+            
+            
+            // 사거리 도달을 위한 대시 로직 (모든 성향, 모든 무기에 적용)
+            if (dist > desiredRange + mecha.DashDistance * 0.3f && mecha.CanDash())
+            {
+                var sensor = self.GetComponent<MechaProjectileSensor>();
+                Vector3 dashDir = DashUtils.CalculateApproachDirection(
+                    selfPos, tgtPos, mecha, sensor, Blackboard);
+                
+                mecha.TryDash(dashDir);
             }
             Vector3 dirToTarget = toTarget / dist;
             // 접선(좌/우)
@@ -101,9 +139,11 @@ namespace GMLM.Game
             }
 
             float wRadial = Mathf.Clamp01(radialErr / Mathf.Max(0.001f, _margin));
+            
+            Vector3 desired;
             // 기본 궤도 비중(_orbitWeight)을 반영해 균형 조정 (오차 클수록 방사성↑)
             float wTangent = Mathf.Lerp(1f, 1f - _orbitWeight, wRadial);
-            Vector3 desired = (tangentN * wTangent) + (radialDir * wRadial);
+            desired = (tangentN * wTangent) + (radialDir * wRadial);
             if (desired.sqrMagnitude <= 1e-6f)
             {
                 desired = tangentN;
@@ -204,6 +244,46 @@ namespace GMLM.Game
 			Vector3 tangentN = tangent.sqrMagnitude > 0f ? tangent.normalized : tangent;
 			// inside/outside blend 동일 계산 재사용
 			float desiredRange = 1.5f;
+			// 파일럿 성향에 따른 사거리 유지 무기 사거리 사용
+			var mecha = self.GetComponent<Mecha>();
+			if (mecha != null)
+			{
+				var combatStyle = mecha.Pilot?.CombatStyle ?? CombatStyle.Ranged;
+				var sortedWeapons = mecha.GetWeaponsSortedByCombatStyle(combatStyle);
+				if (sortedWeapons != null && sortedWeapons.Count > 0)
+				{
+					Weapon firstRangeKeepingWeapon = null;
+					
+					// 발사 가능한 사거리 유지 무기 중 첫 번째 선택
+					bool foundValidWeapon = false;
+					foreach (var w in sortedWeapons)
+					{
+						if (w == null) continue;
+						if (!w.IsRangeKeeping) continue; // 사거리 유지 대상 아님
+						
+						// 첫 번째 사거리 유지 무기 기록 (장전 중이라도)
+						if (firstRangeKeepingWeapon == null && w.AttackRange > 0f)
+						{
+							firstRangeKeepingWeapon = w;
+						}
+						
+						// 장전 중이 아닌 무기 발견 시 즉시 사용
+						if (!w.IsReloading && w.AttackRange > 0f)
+						{
+							desiredRange = w.AttackRange;
+							foundValidWeapon = true;
+							break; // 첫 번째 발사 가능한 사거리 유지 무기 발견
+						}
+					}
+					
+					// 모든 무기가 장전 중일 때: 첫 번째 사거리 유지 무기 사거리 사용
+					// sortedWeapons는 이미 성향별로 정렬되어 있음 (Melee=오름차순, Ranged=내림차순)
+					if (!foundValidWeapon && firstRangeKeepingWeapon != null)
+					{
+						desiredRange = firstRangeKeepingWeapon.AttackRange;
+					}
+				}
+			}
 			// margin 기반 간단화
 			float inside = Mathf.Max(0f, desiredRange - dist);
 			float insideDeadzone = Mathf.Max(_margin, desiredRange * 0.10f);
@@ -227,6 +307,7 @@ namespace GMLM.Game
 			desiredDirection = desired;
 			return true;
 		}
+        
     }
 }
 

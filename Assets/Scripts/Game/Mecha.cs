@@ -88,6 +88,7 @@ namespace GMLM.Game
         public float DashSpeed => _dashSpeed;
         public float DashCooldown => _dashCooldown;
         public float DashEnergyCost => _dashEnergyCost;
+        public bool IsDashing => _isDashing;
         
         // Stagger system properties
         public int MaxStagger => _maxStagger;
@@ -96,13 +97,30 @@ namespace GMLM.Game
         public float StaggerProgress => _currentStagger / _maxStagger;
         public float StaggerRecoveryCooldown => _staggerRecoveryCooldown;
         public float StaggerDuration => _staggerDuration;
+        
+        // 전투 성향에 따라 무기를 사거리 기준으로 정렬한 리스트 반환
+        public List<Weapon> GetWeaponsSortedByCombatStyle(CombatStyle style)
+        {
+            var sorted = new List<Weapon>(_weaponsAll);
+            if (style == CombatStyle.Melee)
+            {
+                // 사거리 낮은 순 (오름차순)
+                sorted.Sort((a, b) => a.AttackRange.CompareTo(b.AttackRange));
+            }
+            else // Ranged
+            {
+                // 사거리 높은 순 (내림차순)
+                sorted.Sort((a, b) => b.AttackRange.CompareTo(a.AttackRange));
+            }
+            return sorted;
+        }
 
         // 내부 상태: 현재 이동 속도(스칼라)
         private float _currentSpeed = 0f;
         private float _energyRegenCooldown = 0f;
-        // Evade sensor cache
-        private Vector2 _incomingDir = Vector2.zero;
-        private float _incomingTTI = float.PositiveInfinity;
+        // Evade sensor cache (legacy - now handled by MechaProjectileSensor)
+        // private Vector2 _incomingDir = Vector2.zero;
+        // private float _incomingTTI = float.PositiveInfinity;
         
         // Stagger system state
         private float _currentStagger = 0f;
@@ -126,6 +144,13 @@ namespace GMLM.Game
         // World-space velocity on XY plane (for predictive aiming, AI, FX)
         public Vector2 WorldVelocity2D { get; private set; } = Vector2.zero;
         private Vector3 _lastPosition;
+        
+        // 예약 시스템 제거됨: 대시 완료 후 자연스럽게 AttackAction에서 공격 처리
+        private void Awake()
+        {
+            _pilot = GetComponent<Pilot>(); 
+        }
+    
         private void OnEnable()
         {
             MechaRegistry.Register(this);
@@ -170,6 +195,8 @@ namespace GMLM.Game
 					{
 						_mechaAnimation.StopDashFx();
 					}
+					
+					// 예약 시스템 제거: 대시 완료 후 자연스럽게 AttackAction에서 공격 처리
                 }
             }
 
@@ -421,6 +448,8 @@ namespace GMLM.Game
         {
             return TryDash(transform.right);
         }
+        
+        // 예약 시스템 제거됨: 대시 완료 후 자연스럽게 AttackAction에서 공격 처리
         #endregion
         
         #region Stagger System
@@ -459,7 +488,7 @@ namespace GMLM.Game
             _currentStagger = _maxStagger; // Cap at max when staggered
             _staggerRecoveryCooldown = 0f; // 스태거 중에는 회복 지연 의미 없음
             
-            if (!_isStaggered && _mechaAnimation != null)
+            if (_mechaAnimation != null)
             {
                 _mechaAnimation.PlayStaggerEffect();
             }

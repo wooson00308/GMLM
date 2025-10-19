@@ -16,6 +16,7 @@ namespace GMLM.Game
         private bool _isHighThreat = false;
         
         [Header("Homing Settings (AC6 Style)")]
+        [SerializeField] private float _homingSpeed =10f;
         [SerializeField, Tooltip("발사 후 호밍 활성화 지연 (초)")] 
         private float _homingDelay = 0.2f;
         [SerializeField, Range(0f, 1f), Tooltip("호밍 강도 (0=직진, 1=최대 추적)")]
@@ -33,6 +34,7 @@ namespace GMLM.Game
         private int _shooterTeam;
         private float _timeLeft;
         private float _elapsedTime = 0f; // 발사 후 경과 시간
+        private bool _isHomingActive = false;
         private Rigidbody2D _rb;
         private Collider2D _trigger;
         private Vector3 _initialDir; // 비유도 초기 비행 방향(XY)
@@ -72,6 +74,25 @@ namespace GMLM.Game
 		{
 			_target = null;
 			_isHoming = false;
+			_shooterTeam = shooterTeam;
+			_damage = Mathf.Max(0, damage);
+			_impactValue = Mathf.Max(0, impact);
+			_timeLeft = _lifeTime;
+            _elapsedTime = 0f;
+            Vector3 dir = new Vector3(initialDirection.x, initialDirection.y, 0f);
+			if (dir.sqrMagnitude <= 0f)
+			{
+                dir = transform.up; // up을 진행방향으로 사용
+			}
+			_initialDir = dir.normalized;
+            _currentDir = _initialDir;
+		}
+
+		// 호밍 발사: 초기 방사 방향으로 시작하되 타겟 추적
+		public void InitializeWithDirectionAndTarget(Vector2 initialDirection, Transform target, int shooterTeam, int damage, int impact = 0)
+		{
+			_target = target;
+			// _isHoming은 프리팹 설정값 유지 (true여야 함)
 			_shooterTeam = shooterTeam;
 			_damage = Mathf.Max(0, damage);
 			_impactValue = Mathf.Max(0, impact);
@@ -133,6 +154,8 @@ namespace GMLM.Game
                 // 1) 호밍 활성화 조건 체크
                 bool homingActive = _elapsedTime >= _homingDelay 
                                  && _elapsedTime <= (_homingDelay + _homingDuration);
+
+                _isHomingActive = homingActive;
                 
                 if (homingActive && _homingStrength > 0f)
                 {
@@ -170,7 +193,8 @@ namespace GMLM.Game
             
             if (dir.sqrMagnitude > 0f)
             {
-                transform.position = selfPos + dir * _speed * Time.deltaTime;
+                float speed = _isHomingActive ? _homingSpeed : _speed;
+                transform.position = selfPos + dir * speed * Time.deltaTime;
                 // 시각만 90도 보정 (이동 방향은 유지)
                 transform.rotation = Quaternion.FromToRotation(Vector3.up, dir) * Quaternion.Euler(0f, 0f, 90f);
             }

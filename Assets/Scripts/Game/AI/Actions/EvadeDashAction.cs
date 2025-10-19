@@ -33,24 +33,30 @@ namespace GMLM.Game
             // 호밍 투사체는 더 빠른 반응 필요 (곡선 추적으로 회피 시간이 짧음)
             float effectiveTTI = sensor.IncomingIsHoming ? _ttiThreshold * 1.5f : _ttiThreshold;
             
-            if (sensor.IncomingIsHighThreat && sensor.IncomingTTI < effectiveTTI && mecha.CanDash())
+            if (sensor.IncomingIsHighThreat && sensor.IncomingTTI < effectiveTTI)
             {
-                // 투사체 진행방향에 수직으로 회피
-                Vector2 d = sensor.IncomingDir;
-                if (d.sqrMagnitude > 0f)
+                if (mecha.CanDash())
                 {
-                    // 스마트한 회피 방향 계산
-                    Vector3 smartEvadeDir = CalculateSmartEvadeDirection(self.position, mecha, sensor, d);
-                    
-                    bool dashSuccess = mecha.TryDash(smartEvadeDir);
-                    
-                    // 대시 성공 시 스트레이프 방향 업데이트
-                    if (dashSuccess && _strafeAction != null)
+                    // 투사체 진행방향에 수직으로 회피
+                    Vector2 d = sensor.IncomingDir;
+                    if (d.sqrMagnitude > 0f)
                     {
-                        _strafeAction.UpdateDirectionFromDash(smartEvadeDir);
+                        // 스마트한 회피 방향 계산
+                        Vector3 smartEvadeDir = CalculateSmartEvadeDirection(self.position, mecha, sensor, d);
+                        
+                        bool dashSuccess = mecha.TryDash(smartEvadeDir);
+                        
+                        // 대시 성공 시 스트레이프 방향 업데이트
+                        if (dashSuccess)
+                        {
+                            if (_strafeAction != null)
+                            {
+                                _strafeAction.UpdateDirectionFromDash(smartEvadeDir);
+                            }
+                            return new UniTask<NodeStatus>(NodeStatus.Success);
+                        }
                     }
                 }
-                return new UniTask<NodeStatus>(NodeStatus.Running);
             }
 
             return new UniTask<NodeStatus>(NodeStatus.Failure);

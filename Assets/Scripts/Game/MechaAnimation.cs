@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Animations;
 
 namespace GMLM.Game
 {
@@ -55,6 +56,7 @@ namespace GMLM.Game
 		[SerializeField, Tooltip("버니어 위치 리스트")] private List<Transform> _thrusterPoints;
 		[SerializeField, Tooltip("대시 FX 프리팹(선택)")] private GameObject _dashFxPrefab;
 		[SerializeField, Tooltip("스러스터 최대 크기(스케일)")] private float _thrusterMaxScale = 0.85f;
+		[SerializeField, Tooltip("이동 시 스러스터 최대 크기 (대시보다 작게 설정 권장)")] private float _moveThrusterMaxScale = 0.6f;
 		[SerializeField, Tooltip("이동 FX 비활성화 지연(초)")] private float _moveFxTimeoutSec = 0.12f;
 		[SerializeField, Tooltip("이동 FX 페이드아웃 시간(초)")] private float _moveFxFadeOutSec = 0.2f;
 		private readonly List<GameObject> _dashFxInstances = new List<GameObject>();
@@ -65,6 +67,8 @@ namespace GMLM.Game
 		private float _moveFxFadeT = 0f;
 		private readonly List<float> _moveFxFadeStartScales = new List<float>();
 
+		private Animator _animator;
+
 		private void Awake()
 		{
 			CacheBaseLocalRotations();
@@ -74,6 +78,17 @@ namespace GMLM.Game
 			{
 				SetupDashFxInstances(_dashFxPrefab);
 			}
+			_animator = GetComponent<Animator>();
+		}
+
+		public void SetAnimator(AnimatorOverrideController controller)
+		{
+			if (_animator == null) return;
+			_animator.runtimeAnimatorController = controller;
+		}
+
+		public void PlayAnimation() {
+			_animator.CrossFade("Attack", 0.1f);
 		}
 
 		private static void UpdateYawLocal(Transform t, float baseZ, float maxYaw, float turnSpeedDeg, float deltaDeg)
@@ -392,7 +407,7 @@ namespace GMLM.Game
 				Vector2 flameDir = -offsetNorm;
 				Quaternion rot = Quaternion.FromToRotation(Vector3.right, flameDir) * Quaternion.Euler(0f, 0f, 90f);
 				fx.transform.rotation = rot;
-				float scale = Mathf.Lerp(0.08f, _thrusterMaxScale, intensity);
+				float scale = Mathf.Lerp(0.08f, _moveThrusterMaxScale, intensity);
 				fx.transform.localScale = Vector3.one * scale;
 				if (!fx.activeSelf) fx.SetActive(true);
 			}

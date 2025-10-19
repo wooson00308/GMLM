@@ -62,8 +62,8 @@ namespace GMLM.Game
             // 예측 조준: 타겟의 이동을 고려한 조준
             Vector3 selfPos = selfTr.position; selfPos.z = 0f;
             Vector3 tgtPos = targetGo.transform.position; tgtPos.z = 0f;
-            Vector3 desiredAim = (tgtPos - selfPos); 
-                                //ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
+            Vector3 desiredAim = //(tgtPos - selfPos); 
+                                ComputePredictiveAim(selfPos, tgtPos, selfMecha, targetMecha);
 
             if (desiredAim.sqrMagnitude > 1e-6f)
             {
@@ -72,13 +72,32 @@ namespace GMLM.Game
                 selfMecha.FaceTowards(selfPos + desiredAim * 2f);
             }
 
-            // 병렬 사격: 사용 가능한 모든 무기 시도 (무기는 머즐.right으로 발사)
-            var all = selfMecha.WeaponsAll;
-            if (all != null && all.Count > 0)
+            // 파일럿 성향에 따른 무기 선택 및 발사
+            var combatStyle = selfMecha.Pilot?.CombatStyle ?? CombatStyle.Ranged;
+            var sortedWeapons = selfMecha.GetWeaponsSortedByCombatStyle(combatStyle);
+            
+            if (sortedWeapons != null && sortedWeapons.Count > 0)
             {
-                foreach (var w in all)
+                foreach (var w in sortedWeapons)
                 {
                     if (w == null) continue;
+                    
+                    // 근접 무기 + 대시 중: 대시 완료 후 자연스럽게 공격하도록 대기
+                    bool isDashing = selfMecha.IsDashing;
+                    bool isMelee = w.Type == WeaponType.Melee;
+                    
+                    if (isMelee && isDashing)
+                    {
+                        // 대시 중에는 공격하지 않고 대시 완료 후 사거리 도달 시 자연스럽게 공격
+                        continue;
+                    }
+                    
+                    // 기존 사거리 체크
+                    if (!w.CanFire) continue;
+                    float dist = Vector3.Distance(selfPos, tgtPos);
+                    if (dist > w.AttackRange + 0.25f) continue; // 약간의 허용 오차
+                    
+                    // 발사 시도
                     w.TryAttack(selfMecha, targetMecha);
                 }
             }

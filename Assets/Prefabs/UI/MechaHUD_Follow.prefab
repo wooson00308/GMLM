@@ -1984,11 +1984,13 @@ MonoBehaviour:
   _offset: {x: 0, y: -5}
   _camera: {fileID: 0}
   _staggerFlashSpeed: 10
-  _hpDangerColor: {r: 1, g: 0, b: 0, a: 1}
-  _energyLowColor: {r: 0, g: 1, b: 1, a: 1}
+  _hpDangerColor: {r: 0.990566, g: 0.5934051, b: 0.5934051, a: 1}
+  _energyLowColor: {r: 1, g: 0, b: 0, a: 1}
   _hpDangerThreshold: 0.3
   _energyLowThreshold: 0.2
   _hpPulseDuration: 0.25
+  _energyPulseColor: {r: 0.7169812, g: 0.7169812, b: 0.7169812, a: 1}
+  _energyPulseDuration: 0.25
 --- !u!1 &6416922377427704703
 GameObject:
   m_ObjectHideFlags: 0

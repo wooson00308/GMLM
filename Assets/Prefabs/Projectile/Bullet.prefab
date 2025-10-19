@@ -18,12 +18,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: _speed
-      value: 60
+      value: 70
       objectReference: {fileID: 0}
     - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: _lifeTime
-      value: 0.2
+      value: 0.25
       objectReference: {fileID: 0}
+    - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
+      propertyPath: _hitEffect
+      value: 
+      objectReference: {fileID: 5182551791349085301, guid: 822c7857ef792364b8e31946f904a26c, type: 3}
+    - target: {fileID: 5952308203860597973, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
+      propertyPath: _destroyEffect
+      value: 
+      objectReference: {fileID: 100002, guid: 64a62feea12e0e442aa528866916687e, type: 3}
     - target: {fileID: 7702467195032771395, guid: 8769cd396d363144d82ebef92f2ec802, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
