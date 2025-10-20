@@ -34,7 +34,7 @@ namespace GMLM.Game
 		[Header("External Weapon Rotation")]
 		[SerializeField, Tooltip("손 하위가 아닌 무기의 회전 속도(deg/sec)")] private float _externalWeaponTurnSpeed = 900f;
 
-        [SerializeField] private GameObject _destroyEffect;
+		[SerializeField] private GameObject _destroyEffect;
 
 		[SerializeField] private GameObject _staggerEffect;
 
@@ -57,6 +57,7 @@ namespace GMLM.Game
 		[SerializeField, Tooltip("대시 FX 프리팹(선택)")] private GameObject _dashFxPrefab;
 		[SerializeField, Tooltip("스러스터 최대 크기(스케일)")] private float _thrusterMaxScale = 0.85f;
 		[SerializeField, Tooltip("이동 시 스러스터 최대 크기 (대시보다 작게 설정 권장)")] private float _moveThrusterMaxScale = 0.6f;
+		[SerializeField, Tooltip("어썰트 부스트 시 스러스터 최대 크기 (더 강력한 연출)")] private float _assaultBoostThrusterMaxScale = 1.2f;
 		[SerializeField, Tooltip("이동 FX 비활성화 지연(초)")] private float _moveFxTimeoutSec = 0.12f;
 		[SerializeField, Tooltip("이동 FX 페이드아웃 시간(초)")] private float _moveFxFadeOutSec = 0.2f;
 		private readonly List<GameObject> _dashFxInstances = new List<GameObject>();
@@ -79,6 +80,14 @@ namespace GMLM.Game
 				SetupDashFxInstances(_dashFxPrefab);
 			}
 			_animator = GetComponent<Animator>();
+
+			EnableAnimator(false);
+		}
+
+		public void EnableAnimator(bool enable)
+		{
+			if (_animator == null) return;
+			_animator.enabled = enable;
 		}
 
 		public void SetAnimator(AnimatorOverrideController controller)
@@ -87,7 +96,9 @@ namespace GMLM.Game
 			_animator.runtimeAnimatorController = controller;
 		}
 
-		public void PlayAnimation() {
+		public void PlayAnimation()
+		{
+			EnableAnimator(true);
 			_animator.CrossFade("Attack", 0.1f);
 		}
 
@@ -105,6 +116,7 @@ namespace GMLM.Game
 		{
 			if (hand == null || maxYaw <= 0f) return;
 			if (gateEnabled && !hasWeapon) return;
+			
 			UpdateYawLocal(hand, baseZ, maxYaw, turnSpeedDeg, deltaDeg);
 		}
 
@@ -154,13 +166,13 @@ namespace GMLM.Game
 			if (_moveFxFadeT >= dur) _isMoveFading = false;
 		}
 
-        private void OnDisable()
-        {
-            if (_destroyEffect != null)
-            {
-                Instantiate(_destroyEffect, transform.position, _destroyEffect.transform.rotation);
-            }
-        }
+		private void OnDisable()
+		{
+			if (_destroyEffect != null)
+			{
+				Instantiate(_destroyEffect, transform.position, _destroyEffect.transform.rotation);
+			}
+		}
 
 		public void PlayStaggerEffect()
 		{
@@ -385,6 +397,15 @@ namespace GMLM.Game
 				for (int i = 0; i < _dashFxInstances.Count; i++) { var fx = _dashFxInstances[i]; if (fx != null) fx.SetActive(false); }
 				return;
 			}
+
+			// Check if assault boost is active for enhanced thruster effects
+			bool isAssaultBoosting = false;
+			var mecha = GetComponent<Mecha>();
+			if (mecha != null)
+			{
+				isAssaultBoosting = mecha.IsAssaultBoosting;
+			}
+
 			Vector2 dirNorm = velocity.normalized;
 			Vector2 oppDir = -dirNorm;
 			const float minIntensity = 0.05f;
@@ -407,7 +428,10 @@ namespace GMLM.Game
 				Vector2 flameDir = -offsetNorm;
 				Quaternion rot = Quaternion.FromToRotation(Vector3.right, flameDir) * Quaternion.Euler(0f, 0f, 90f);
 				fx.transform.rotation = rot;
-				float scale = Mathf.Lerp(0.08f, _moveThrusterMaxScale, intensity);
+
+				// Use different scale based on assault boost status
+				float maxScale = isAssaultBoosting ? _assaultBoostThrusterMaxScale : _moveThrusterMaxScale;
+				float scale = Mathf.Lerp(0.08f, maxScale, intensity);
 				fx.transform.localScale = Vector3.one * scale;
 				if (!fx.activeSelf) fx.SetActive(true);
 			}
@@ -459,8 +483,14 @@ namespace GMLM.Game
 
 		private static bool HasWeaponUnder(Transform root)
 		{
-			if (root == null) return false;
-			return root.GetComponentInChildren<Weapon>(true) != null;
+			var weapon = GetWeaponUnder(root);
+			return weapon != null && weapon.IsRotateToTarget;
+		}
+
+		private static Weapon GetWeaponUnder(Transform root)
+		{
+			if (root == null) return null;
+			return root.GetComponentInChildren<Weapon>(true);
 		}
 
 		/// <summary>

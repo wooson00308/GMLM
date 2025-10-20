@@ -112,7 +112,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _range
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _preDelay
@@ -132,7 +132,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _attackPower
-      value: 15
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _attackSpeed
@@ -146,6 +146,14 @@ PrefabInstance:
       propertyPath: _magazineSize
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _startLagTime
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
+      propertyPath: _meleeHitEffect
+      value: 
+      objectReference: {fileID: 5182551791349085301, guid: 822c7857ef792364b8e31946f904a26c, type: 3}
     - target: {fileID: 5633724481324373786, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: _isRotateToTarget
       value: 0
@@ -164,7 +172,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7535945023518076615, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.4
       objectReference: {fileID: 0}
     - target: {fileID: 7535945023518076615, guid: 4d6a99c29b43f614286bedaa2f87ea91, type: 3}
       propertyPath: m_LocalPosition.z

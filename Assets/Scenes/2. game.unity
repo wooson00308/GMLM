@@ -935,6 +935,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7198794208494427655, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 22100000, guid: 6f5f21b4f8571aa4f84f18910f0516c7, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1076,6 +1080,10 @@ PrefabInstance:
       propertyPath: _thrusterPoints.Array.size
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: 6340323997194179954, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
+      propertyPath: _combatStyle
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6733372804876287684, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
       propertyPath: m_Color.b
       value: 0.7058824
@@ -1140,6 +1148,10 @@ PrefabInstance:
       propertyPath: m_Color.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7198794208494427655, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 22100000, guid: 6f5f21b4f8571aa4f84f18910f0516c7, type: 2}
     - target: {fileID: 7950267758619685311, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
       propertyPath: m_Color.b
       value: 0.7058824
@@ -1334,6 +1346,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7198794208494427655, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 22100000, guid: 6f5f21b4f8571aa4f84f18910f0516c7, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1559,6 +1575,10 @@ PrefabInstance:
       propertyPath: m_Color.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7198794208494427655, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 22100000, guid: 6f5f21b4f8571aa4f84f18910f0516c7, type: 2}
     - target: {fileID: 7950267758619685311, guid: 7fd60f6c20929bd49969e62eaee35997, type: 3}
       propertyPath: m_Color.b
       value: 0.7058824

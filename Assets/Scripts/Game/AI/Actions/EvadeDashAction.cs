@@ -27,13 +27,22 @@ namespace GMLM.Game
             var sensor = self.GetComponent<MechaProjectileSensor>();
             if (mecha == null || sensor == null) return new UniTask<NodeStatus>(NodeStatus.Failure);
 
-            // 고위협 투사체만 대시 발동 (바주카/미사일 등)
-            // 일반 투사체는 스트레이프로 자연 회피
+            // 위험 상태 확인: 스태거 80% 이상 또는 체력 30% 이하
+            float staggerProgress = mecha.StaggerProgress;
+            float hpRatio = (float)mecha.CurrentHp / mecha.MaxHp;
+            bool isStaggerDanger = staggerProgress >= 0.8f;
+            bool isHpDanger = hpRatio <= 0.3f;
+            bool isInDanger = isStaggerDanger || isHpDanger;
             
             // 호밍 투사체는 더 빠른 반응 필요 (곡선 추적으로 회피 시간이 짧음)
             float effectiveTTI = sensor.IncomingIsHoming ? _ttiThreshold * 1.5f : _ttiThreshold;
             
-            if (sensor.IncomingIsHighThreat && sensor.IncomingTTI < effectiveTTI)
+            // 회피 조건: 위험 상태 시 모든 투사체, 평상시 고위험만
+            bool shouldEvade = isInDanger 
+                ? (sensor.IncomingTTI < effectiveTTI) // 위험 상태: 모든 투사체 회피
+                : (sensor.IncomingIsHighThreat && sensor.IncomingTTI < effectiveTTI); // 평상시: 고위험만
+            
+            if (shouldEvade)
             {
                 if (mecha.CanDash())
                 {
@@ -43,6 +52,12 @@ namespace GMLM.Game
                     {
                         // 스마트한 회피 방향 계산
                         Vector3 smartEvadeDir = CalculateSmartEvadeDirection(self.position, mecha, sensor, d);
+                        
+                        // 명시적으로 어썰트 부스트 해제 (TryDash에서도 처리되지만 명시성 확보)
+                        if (mecha.IsAssaultBoosting)
+                        {
+                            mecha.StopAssaultBoost();
+                        }
                         
                         bool dashSuccess = mecha.TryDash(smartEvadeDir);
                         

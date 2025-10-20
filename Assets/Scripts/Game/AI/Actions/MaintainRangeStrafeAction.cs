@@ -58,7 +58,8 @@ namespace GMLM.Game
 
             float desiredRange = 1.5f;
             var combatStyle = mecha.Pilot?.CombatStyle ?? CombatStyle.Ranged;
-            var sortedWeapons = mecha.GetWeaponsSortedByCombatStyle(combatStyle);
+            var mTarget = target.GetComponent<Mecha>();
+            var sortedWeapons = mecha.GetWeaponsSortedByCombatStyle(combatStyle, mTarget);
 
             // 성향별 사거리 선택 로직
             if (sortedWeapons != null && sortedWeapons.Count > 0)
@@ -105,14 +106,45 @@ namespace GMLM.Game
             }
             
             
-            // 사거리 도달을 위한 대시 로직 (모든 성향, 모든 무기에 적용)
-            if (dist > desiredRange + mecha.DashDistance * 0.3f && mecha.CanDash())
+            // 거리 좁히기: 어썰트 부스트 우선, 불가능하면 퀵 대시
+            if (dist > desiredRange)
             {
-                var sensor = self.GetComponent<MechaProjectileSensor>();
-                Vector3 dashDir = DashUtils.CalculateApproachDirection(
-                    selfPos, tgtPos, mecha, sensor, Blackboard);
+                float gap = dist - desiredRange;
                 
-                mecha.TryDash(dashDir);
+                // 1. 어썰트 부스트 활성화 조건: 중거리~원거리 간격 (1.5m 이상)
+                if (gap > 1.5f)
+                {
+                    if (!mecha.IsAssaultBoosting && mecha.CanAssaultBoost())
+                    {
+                        mecha.TryStartAssaultBoost();
+                    }
+                }
+                else
+                {
+                    // 2. 적정 거리 도달 시 어썰트 해제
+                    if (mecha.IsAssaultBoosting)
+                    {
+                        mecha.StopAssaultBoost();
+                    }
+                }
+                
+                // 3. 퀵 대시는 어썰트 부스트가 불가능할 때만 사용 (매우 긴 거리)
+                if (gap > mecha.DashDistance * 0.5f && mecha.CanDash() && !mecha.IsAssaultBoosting && !mecha.CanAssaultBoost())
+                {
+                    var sensor = self.GetComponent<MechaProjectileSensor>();
+                    Vector3 dashDir = DashUtils.CalculateApproachDirection(
+                        selfPos, tgtPos, mecha, sensor, Blackboard);
+                    
+                    mecha.TryDash(dashDir);
+                }
+            }
+            else
+            {
+                // 4. 사거리 안쪽이면 어썰트 해제
+                if (mecha.IsAssaultBoosting)
+                {
+                    mecha.StopAssaultBoost();
+                }
             }
             Vector3 dirToTarget = toTarget / dist;
             // 접선(좌/우)
@@ -249,7 +281,9 @@ namespace GMLM.Game
 			if (mecha != null)
 			{
 				var combatStyle = mecha.Pilot?.CombatStyle ?? CombatStyle.Ranged;
-				var sortedWeapons = mecha.GetWeaponsSortedByCombatStyle(combatStyle);
+				var targetGameObject = Blackboard.GetGameObject(_targetKey);
+				var mTarget = targetGameObject != null ? targetGameObject.GetComponent<Mecha>() : null;
+				var sortedWeapons = mecha.GetWeaponsSortedByCombatStyle(combatStyle, mTarget);
 				if (sortedWeapons != null && sortedWeapons.Count > 0)
 				{
 					Weapon firstRangeKeepingWeapon = null;

@@ -27,6 +27,10 @@ namespace GMLM.Game
         [ShowIf("IsRanged")]
         [SerializeField] private Transform _muzzle;
         [SerializeField] private Transform _fireEffect;
+        
+        [Header("Melee Hit Effect")]
+        [ShowIf("IsMelee")]
+        [SerializeField] private GameObject _meleeHitEffect;
 
 		[Header("Spread (Ranged)")]
 		[ShowIf("IsRanged")]
@@ -36,6 +40,10 @@ namespace GMLM.Game
 
         [Header("Pre-Delay")]
         [SerializeField, Tooltip("공격 전 선딜레이 (초)"), MinValue(0f)] private float _preDelay = 0f;
+
+        [Header("Start Lag")]
+        [SerializeField, Tooltip("발사 시작 경직 시간 (초) - 이동/회전/다른무기/대시 불가"), MinValue(0f)] 
+        private float _startLagTime = 0f;
 
         [Header("Burst Fire")]
         [SerializeField, Tooltip("연사(버스트) 모드 활성화")] private bool _burstMode = false;
@@ -75,6 +83,7 @@ namespace GMLM.Game
         private MechaAnimation _mechaAnimation;
         // Odin helper methods
         private bool IsRanged => _type == WeaponType.Ranged;
+        private bool IsMelee => _type == WeaponType.Melee;
         private bool IsBurstEnabled => _burstMode && IsRanged;
 
         public bool IsRotateToTarget => _isRotateToTarget;
@@ -82,6 +91,7 @@ namespace GMLM.Game
         public float AttackRange => _range;
         public float RemainingCooldown => Mathf.Max(0f, _cooldownTimer);
         public int ImpactValue => _impactValue;
+        public float StartLagTime => _startLagTime;
 
 		// Exposed descriptors for aiming logic (read-only)
 		public float ProjectileSpeed => _projectilePrefab != null ? _projectilePrefab.Speed : 0f;
@@ -231,6 +241,7 @@ namespace GMLM.Game
         public bool TryAttack(Mecha self, Mecha target)
         {
             if (self == null || target == null || !target.IsAlive) return false;
+            if (self.IsInStartLag) return false; // StartLag 상태에서는 공격 불가
             if (self.IsStaggered) return false; // 스태거 상태에서는 공격 불가
             if (!CanFire) return false; // 재장전 중이거나 탄약이 없으면 공격 불가
             if (self.TeamId == target.TeamId) return false;
@@ -242,6 +253,12 @@ namespace GMLM.Game
             {
                 _mechaAnimation.SetAnimator(_animatorOverrideController);
                 _mechaAnimation.PlayAnimation();
+            }
+
+            // StartLag 시작 (Pre-Delay와 병렬)
+            if (_startLagTime > 0f)
+            {
+                self.StartStartLag(_startLagTime);
             }
 
             // 선딜레이가 설정되어 있으면 선딜레이 시작
@@ -370,7 +387,21 @@ namespace GMLM.Game
             
             if (_type == WeaponType.Melee)
             {
-                target.TakeDamage(damage, impact);
+                // 근접무기: 선딜레이 완료 후에도 사거리 재검증
+                float distance = Vector3.Distance(self.transform.position, target.transform.position);
+                if (distance <= _range)
+                {
+                    target.TakeDamage(damage, impact);
+                    
+                    // 근접무기 히트 이펙트 생성
+                    if (_meleeHitEffect != null)
+                    {
+                        var hitPos = target.transform.position;
+                        var hitRot = _meleeHitEffect.transform.rotation;
+                        Instantiate(_meleeHitEffect, hitPos, hitRot);
+                    }
+                }
+                // 사거리 밖이면 공격 실패 (데미지 없음)
             }
             else
             {

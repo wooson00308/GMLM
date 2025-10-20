@@ -347,6 +347,9 @@ MonoBehaviour:
   _dashSpeed: 28
   _dashCooldown: 0
   _dashEnergyCost: 20
+  _assaultBoostSpeedMultiplier: 2.5
+  _assaultBoostActivationCost: 15
+  _assaultBoostDrainPerSec: 32
 --- !u!114 &5560646582550016971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -384,8 +387,9 @@ MonoBehaviour:
   - {fileID: 1373893482891857406}
   - {fileID: 7960837788999343900}
   _dashFxPrefab: {fileID: 6294508013172393196, guid: 5f75716441258274480171c046e368ba, type: 3}
-  _thrusterMaxScale: 0.55
-  _moveThrusterMaxScale: 0.3
+  _thrusterMaxScale: 0.45
+  _moveThrusterMaxScale: 0.2
+  _assaultBoostThrusterMaxScale: 0.45
   _moveFxTimeoutSec: 0.3
   _moveFxFadeOutSec: 0.4
 --- !u!114 &6340323997194179954
@@ -611,7 +615,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2732054244565908976
 Transform:
   m_ObjectHideFlags: 0
@@ -620,12 +624,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3614616280253514283}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0, y: -0.546, z: 0}
-  m_LocalScale: {x: 0.75, y: 0.7, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.5460053, z: 0}
+  m_LocalScale: {x: 0.75000006, y: 0.6999999, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8504011049890399853}
+  m_Father: {fileID: 8671686815994868176}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &4410753083739234968
 SpriteRenderer:
@@ -747,7 +751,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8671686815994868176}
-  - {fileID: 2732054244565908976}
   - {fileID: 8382441668690903169}
   - {fileID: 1500119650488359798}
   - {fileID: 2303826057580197284}
@@ -799,6 +802,7 @@ Transform:
   m_Children:
   - {fileID: 4028653281719057246}
   - {fileID: 820698735740225544}
+  - {fileID: 2732054244565908976}
   m_Father: {fileID: 8504011049890399853}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3893514022460266727
@@ -1317,7 +1321,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3210420595621386733, guid: 5f0c2b2aed247354ca63670beee89691, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.4
       objectReference: {fileID: 0}
     - target: {fileID: 3210420595621386733, guid: 5f0c2b2aed247354ca63670beee89691, type: 3}
       propertyPath: m_LocalPosition.z

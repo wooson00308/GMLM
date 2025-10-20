@@ -90,6 +90,10 @@ namespace GMLM.Game
         public float DashEnergyCost => _dashEnergyCost;
         public bool IsDashing => _isDashing;
         
+        // Assault Boost parameters
+        public float AssaultBoostSpeedMultiplier => _assaultBoostSpeedMultiplier;
+        public bool IsAssaultBoosting => _isAssaultBoosting;
+        
         // Stagger system properties
         public int MaxStagger => _maxStagger;
         public float CurrentStagger => _currentStagger;
@@ -97,21 +101,68 @@ namespace GMLM.Game
         public float StaggerProgress => _currentStagger / _maxStagger;
         public float StaggerRecoveryCooldown => _staggerRecoveryCooldown;
         public float StaggerDuration => _staggerDuration;
+        public bool IsInStartLag => _isInStartLag;
         
+        // 근접무기 중 발사 가능한 무기가 있는지 검사
+        private bool HasAvailableMeleeWeapon()
+        {
+            foreach (var weapon in _weaponsAll)
+            {
+                if (weapon == null) continue;
+                if (weapon.Type == WeaponType.Melee && weapon.CanFire)
+                    return true;
+            }
+            return false;
+        }
+
         // 전투 성향에 따라 무기를 사거리 기준으로 정렬한 리스트 반환
-        public List<Weapon> GetWeaponsSortedByCombatStyle(CombatStyle style)
+        public List<Weapon> GetWeaponsSortedByCombatStyle(CombatStyle style, Mecha target = null)
         {
             var sorted = new List<Weapon>(_weaponsAll);
-            if (style == CombatStyle.Melee)
+            
+            // 1. 타겟 스태거 체크 (최우선) - 근접무기가 발사 가능할 때만
+            if (target != null && target.IsStaggered && HasAvailableMeleeWeapon())
             {
-                // 사거리 낮은 순 (오름차순)
+                // 스태거 상태: 근접 무기를 모두 앞으로 배치
+                var meleeWeapons = new List<Weapon>();
+                var rangedWeapons = new List<Weapon>();
+                
+                foreach (var weapon in sorted)
+                {
+                    if (weapon.Type == WeaponType.Melee)
+                        meleeWeapons.Add(weapon);
+                    else
+                        rangedWeapons.Add(weapon);
+                }
+                
+                // 근접 무기끼리는 사거리 오름차순 정렬
+                meleeWeapons.Sort((a, b) => a.AttackRange.CompareTo(b.AttackRange));
+                // 원거리 무기는 사거리 내림차순 정렬
+                rangedWeapons.Sort((a, b) => b.AttackRange.CompareTo(a.AttackRange));
+                
+                // 근접 무기 먼저, 그 다음 원거리 무기
+                sorted.Clear();
+                sorted.AddRange(meleeWeapons);
+                sorted.AddRange(rangedWeapons);
+            }
+            else if (style == CombatStyle.Melee)
+            {
+                // 근접 성향: 모든 무기를 사거리 오름차순 정렬
                 sorted.Sort((a, b) => a.AttackRange.CompareTo(b.AttackRange));
             }
             else // Ranged
             {
-                // 사거리 높은 순 (내림차순)
-                sorted.Sort((a, b) => b.AttackRange.CompareTo(a.AttackRange));
+                // 원거리 성향: 근접 무기 배제, 원거리 무기만 사거리 내림차순 정렬
+                var rangedOnly = new List<Weapon>();
+                foreach (var weapon in sorted)
+                {
+                    if (weapon.Type != WeaponType.Melee)
+                        rangedOnly.Add(weapon);
+                }
+                rangedOnly.Sort((a, b) => b.AttackRange.CompareTo(a.AttackRange));
+                sorted = rangedOnly;
             }
+            
             return sorted;
         }
 
@@ -128,6 +179,10 @@ namespace GMLM.Game
         private float _staggerTimer = 0f;
         private float _staggerRecoveryCooldown = 0f; // 회복 지연 타이머
 
+        // StartLag system state
+        private bool _isInStartLag = false;
+        private float _startLagTimer = 0f;
+
         [Header("Animation")]
         [SerializeField] private MechaAnimation _mechaAnimation;
 
@@ -140,6 +195,12 @@ namespace GMLM.Game
         private bool _isDashing = false;
         private Vector3 _dashDir = Vector3.zero; // XY
         private float _dashRemainingDistance = 0f;
+
+        [Header("Assault Boost")]
+        [SerializeField] private float _assaultBoostSpeedMultiplier = 1.5f;
+        [SerializeField] private float _assaultBoostActivationCost = 15.0f;
+        [SerializeField] private float _assaultBoostDrainPerSec = 35.0f;
+        private bool _isAssaultBoosting = false;
 
         // World-space velocity on XY plane (for predictive aiming, AI, FX)
         public Vector2 WorldVelocity2D { get; private set; } = Vector2.zero;
@@ -200,6 +261,22 @@ namespace GMLM.Game
                 }
             }
 
+            // Assault Boost energy drain
+            if (_isAssaultBoosting)
+            {
+                float drainAmount = _assaultBoostDrainPerSec * dt;
+                if (_currentEnergy >= drainAmount)
+                {
+                    _currentEnergy -= drainAmount;
+                    _energyRegenCooldown = _energyRegenDelay;
+                }
+                else
+                {
+                    // Not enough energy, stop assault boost
+                    _isAssaultBoosting = false;
+                }
+            }
+
             // Cooldowns
             if (_dashCooldownTimer > 0f) _dashCooldownTimer -= dt;
             if (_energyRegenCooldown > 0f)
@@ -216,6 +293,9 @@ namespace GMLM.Game
             
             // Stagger system update
             UpdateStaggerSystem(dt);
+
+            // StartLag system update
+            UpdateStartLagSystem(dt);
 
             // Death check safety
             if (_currentHp <= 0)
@@ -308,6 +388,7 @@ namespace GMLM.Game
 		public bool MoveTowards(Vector3 targetPosition)
         {
             if (_isStaggered) return false; // 스태거 상태에서는 이동 불가
+            if (_isInStartLag) return false; // StartLag 상태에서는 이동 불가
             if (_isDashing) return true; // 대시 중에는 독립 이동 우선
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             Vector3 tgtPos = targetPosition; tgtPos.z = 0f;
@@ -331,6 +412,7 @@ namespace GMLM.Game
 		public bool MoveInDirection(Vector3 direction, bool rotateToMovement = true)
         {
             if (_isStaggered) return false; // 스태거 상태에서는 이동 불가
+            if (_isInStartLag) return false; // StartLag 상태에서는 이동 불가
             if (_isDashing) return true; // 대시 중에는 독립 이동 우선
             Vector3 dir = direction; dir.z = 0f;
             if (dir.sqrMagnitude <= 0f) return false;
@@ -338,6 +420,13 @@ namespace GMLM.Game
 			if (rotateToMovement) AimTowards(dir);
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             float targetSpeed = Mathf.Max(0f, _moveSpeed);
+            
+            // Apply assault boost speed multiplier
+            if (_isAssaultBoosting)
+            {
+                targetSpeed *= _assaultBoostSpeedMultiplier;
+            }
+            
             float rate = (_currentSpeed < targetSpeed) ? _acceleration : _deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.deltaTime);
             Vector3 next = selfPos + dir * _currentSpeed * Time.deltaTime;
@@ -353,6 +442,7 @@ namespace GMLM.Game
 		public void FaceTowards(Vector3 targetPosition)
         {
             if (_isStaggered) return; // 스태거 상태에서는 회전 불가
+            if (_isInStartLag) return; // StartLag 상태에서는 회전 불가
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             Vector3 tgtPos = targetPosition; tgtPos.z = 0f;
             Vector3 dir = (tgtPos - selfPos);
@@ -420,7 +510,7 @@ namespace GMLM.Game
 
         public bool CanDash()
         {
-            return !_isStaggered && !_isDashing && _dashCooldownTimer <= 0f && _currentEnergy >= _dashEnergyCost;
+            return !_isStaggered && !_isInStartLag && !_isDashing && _dashCooldownTimer <= 0f && _currentEnergy >= _dashEnergyCost;
         }
 
         public bool TryDash(Vector3 direction)
@@ -431,6 +521,12 @@ namespace GMLM.Game
             dir.Normalize();
 
             if (!SpendEnergy(_dashEnergyCost)) return false;
+
+            // Stop assault boost when dashing
+            if (_isAssaultBoosting)
+            {
+                _isAssaultBoosting = false;
+            }
 
             _isDashing = true;
             _dashDir = dir;
@@ -448,6 +544,26 @@ namespace GMLM.Game
         {
             return TryDash(transform.right);
         }
+
+        #region Assault Boost API
+        public bool CanAssaultBoost()
+        {
+            return !_isStaggered && !_isInStartLag && !_isDashing && _currentEnergy >= _assaultBoostActivationCost;
+        }
+
+        public bool TryStartAssaultBoost()
+        {
+            if (!CanAssaultBoost()) return false;
+            if (!SpendEnergy(_assaultBoostActivationCost)) return false;
+            _isAssaultBoosting = true;
+            return true;
+        }
+
+        public void StopAssaultBoost()
+        {
+            _isAssaultBoosting = false;
+        }
+        #endregion
         
         // 예약 시스템 제거됨: 대시 완료 후 자연스럽게 AttackAction에서 공격 처리
         #endregion
@@ -488,6 +604,16 @@ namespace GMLM.Game
             _currentStagger = _maxStagger; // Cap at max when staggered
             _staggerRecoveryCooldown = 0f; // 스태거 중에는 회복 지연 의미 없음
             
+            // StartLag 해제
+            _isInStartLag = false;
+            _startLagTimer = 0f;
+            
+            // Stop assault boost when staggered
+            if (_isAssaultBoosting)
+            {
+                _isAssaultBoosting = false;
+            }
+            
             if (_mechaAnimation != null)
             {
                 _mechaAnimation.PlayStaggerEffect();
@@ -502,6 +628,28 @@ namespace GMLM.Game
             _staggerRecoveryCooldown = _staggerRecoveryDelay; // 회복 시작까지 지연
             
             // TODO: Add stagger recovery effects here
+        }
+        #endregion
+
+        #region StartLag System
+        public void StartStartLag(float duration)
+        {
+            if (duration <= 0f) return;
+            _isInStartLag = true;
+            _startLagTimer = Mathf.Max(_startLagTimer, duration); // 기존 타이머보다 긴 경우만 갱신
+        }
+
+        private void UpdateStartLagSystem(float deltaTime)
+        {
+            if (_isInStartLag)
+            {
+                _startLagTimer -= deltaTime;
+                if (_startLagTimer <= 0f)
+                {
+                    _isInStartLag = false;
+                    _startLagTimer = 0f;
+                }
+            }
         }
         #endregion
     }

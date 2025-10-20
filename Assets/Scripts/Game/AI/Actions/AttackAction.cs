@@ -74,7 +74,7 @@ namespace GMLM.Game
 
             // 파일럿 성향에 따른 무기 선택 및 발사
             var combatStyle = selfMecha.Pilot?.CombatStyle ?? CombatStyle.Ranged;
-            var sortedWeapons = selfMecha.GetWeaponsSortedByCombatStyle(combatStyle);
+            var sortedWeapons = selfMecha.GetWeaponsSortedByCombatStyle(combatStyle, targetMecha);
             
             if (sortedWeapons != null && sortedWeapons.Count > 0)
             {
