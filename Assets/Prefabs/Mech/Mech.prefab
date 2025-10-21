@@ -211,6 +211,37 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &1447597453339307199
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4940388474932765359}
+  m_Layer: 0
+  m_Name: Group_Shoulder_Right
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4940388474932765359
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1447597453339307199}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.73, y: 0.08, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8671686815994868176}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1599941612258745550
 GameObject:
   m_ObjectHideFlags: 0
@@ -420,14 +451,22 @@ MonoBehaviour:
   _head: {fileID: 8382441668690903169}
   _leftHand: {fileID: 1500119650488359798}
   _rightHand: {fileID: 2303826057580197284}
+  _leftShoulder: {fileID: 892468211335932608}
+  _rightShoulder: {fileID: 4940388474932765359}
   _maxHeadYaw: 360
   _maxLeftHandYaw: 360
   _maxRightHandYaw: 360
+  _maxLeftShoulderYaw: 360
+  _maxRightShoulderYaw: 360
   _headTurnSpeed: 720
   _leftHandTurnSpeed: 900
   _rightHandTurnSpeed: 900
+  _leftShoulderTurnSpeed: 850
+  _rightShoulderTurnSpeed: 850
   _rotateLeftIfWeaponOnly: 1
   _rotateRightIfWeaponOnly: 1
+  _rotateLeftShoulderIfWeaponOnly: 1
+  _rotateRightShoulderIfWeaponOnly: 1
   _enableBodyAssist: 1
   _assistEnterFrac: 0.85
   _assistExitFrac: 0.65
@@ -857,8 +896,9 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4028653281719057246}
-  - {fileID: 820698735740225544}
   - {fileID: 2732054244565908976}
+  - {fileID: 892468211335932608}
+  - {fileID: 4940388474932765359}
   m_Father: {fileID: 8504011049890399853}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3893514022460266727
@@ -919,6 +959,38 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &4683380321984801023
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 892468211335932608}
+  m_Layer: 0
+  m_Name: Group_Shoulder_Left
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &892468211335932608
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4683380321984801023}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.73, y: 0.08, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 820698735740225544}
+  m_Father: {fileID: 8671686815994868176}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5308604814594955873
 GameObject:
   m_ObjectHideFlags: 0
@@ -1205,15 +1277,23 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 8671686815994868176}
+    m_TransformParent: {fileID: 892468211335932608}
     m_Modifications:
     - target: {fileID: 5253847965349030654, guid: 24c061b3e0526c14387b023c5224c522, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5253847965349030654, guid: 24c061b3e0526c14387b023c5224c522, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5253847965349030654, guid: 24c061b3e0526c14387b023c5224c522, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.73
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5253847965349030654, guid: 24c061b3e0526c14387b023c5224c522, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.08
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5253847965349030654, guid: 24c061b3e0526c14387b023c5224c522, type: 3}
       propertyPath: m_LocalPosition.z

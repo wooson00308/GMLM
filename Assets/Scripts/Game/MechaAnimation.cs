@@ -6,24 +6,32 @@ namespace GMLM.Game
 {
 	public class MechaAnimation : MonoBehaviour
 	{
-		[Header("Rig Transforms")]
-		[SerializeField] private Transform _head;
-		[SerializeField] private Transform _leftHand;
-		[SerializeField] private Transform _rightHand;
+	[Header("Rig Transforms")]
+	[SerializeField] private Transform _head;
+	[SerializeField] private Transform _leftHand;
+	[SerializeField] private Transform _rightHand;
+	[SerializeField] private Transform _leftShoulder;
+	[SerializeField] private Transform _rightShoulder;
 
 		[Header("Yaw Limits (±deg)")]
 		[SerializeField] private float _maxHeadYaw = 70f;
 		[SerializeField] private float _maxLeftHandYaw = 95f;
 		[SerializeField] private float _maxRightHandYaw = 95f;
+		[SerializeField] private float _maxLeftShoulderYaw = 85f;
+		[SerializeField] private float _maxRightShoulderYaw = 85f;
 
 		[Header("Turn Speeds (deg/sec)")]
 		[SerializeField] private float _headTurnSpeed = 720f;
 		[SerializeField] private float _leftHandTurnSpeed = 900f;
 		[SerializeField] private float _rightHandTurnSpeed = 900f;
+		[SerializeField] private float _leftShoulderTurnSpeed = 850f;
+		[SerializeField] private float _rightShoulderTurnSpeed = 850f;
 
 		[Header("Hand Rotation Gating")]
 		[SerializeField, Tooltip("자식에 Weapon이 있을 때만 해당 손 회전 허용")] private bool _rotateLeftIfWeaponOnly = true;
 		[SerializeField, Tooltip("자식에 Weapon이 있을 때만 해당 손 회전 허용")] private bool _rotateRightIfWeaponOnly = true;
+		[SerializeField, Tooltip("자식에 Weapon이 있을 때만 해당 어깨 회전 허용")] private bool _rotateLeftShoulderIfWeaponOnly = true;
+		[SerializeField, Tooltip("자식에 Weapon이 있을 때만 해당 어깨 회전 허용")] private bool _rotateRightShoulderIfWeaponOnly = true;
 
 		[Header("Body Assist Rotation")]
 		[SerializeField, Tooltip("헤드/손이 한계에 가까워지면 동체가 보조 회전")] private bool _enableBodyAssist = true;
@@ -38,14 +46,25 @@ namespace GMLM.Game
 
 		[SerializeField] private GameObject _staggerEffect;
 
+		// Public properties for external access (optimization)
+		public Transform Head => _head;
+		public Transform LeftHand => _leftHand;
+		public Transform RightHand => _rightHand;
+		public Transform LeftShoulder => _leftShoulder;
+		public Transform RightShoulder => _rightShoulder;
+
 		// Cached base local Z for preserving authored rest pose
 		private float _headBaseLocalZ;
 		private float _leftBaseLocalZ;
 		private float _rightBaseLocalZ;
+		private float _leftShoulderBaseLocalZ;
+		private float _rightShoulderBaseLocalZ;
 
 		// Cached presence of weapons under hands
 		private bool _leftHasWeapon;
 		private bool _rightHasWeapon;
+		private bool _leftShoulderHasWeapon;
+		private bool _rightShoulderHasWeapon;
 		private bool _assistActive;
 		private float _assistTimer;
 
@@ -187,9 +206,11 @@ namespace GMLM.Game
 		/// </summary>
 		public void CacheBaseLocalRotations()
 		{
-			if (_head != null) _headBaseLocalZ = _head.localEulerAngles.z;
-			if (_leftHand != null) _leftBaseLocalZ = _leftHand.localEulerAngles.z;
-			if (_rightHand != null) _rightBaseLocalZ = _rightHand.localEulerAngles.z;
+		if (_head != null) _headBaseLocalZ = _head.localEulerAngles.z;
+		if (_leftHand != null) _leftBaseLocalZ = _leftHand.localEulerAngles.z;
+		if (_rightHand != null) _rightBaseLocalZ = _rightHand.localEulerAngles.z;
+		if (_leftShoulder != null) _leftShoulderBaseLocalZ = _leftShoulder.localEulerAngles.z;
+		if (_rightShoulder != null) _rightShoulderBaseLocalZ = _rightShoulder.localEulerAngles.z;
 		}
 
 		/// <summary>
@@ -197,8 +218,10 @@ namespace GMLM.Game
 		/// </summary>
 		public void RefreshWeaponPresence()
 		{
-			_leftHasWeapon = HasWeaponUnder(_leftHand);
-			_rightHasWeapon = HasWeaponUnder(_rightHand);
+		_leftHasWeapon = HasWeaponUnder(_leftHand);
+		_rightHasWeapon = HasWeaponUnder(_rightHand);
+		_leftShoulderHasWeapon = HasWeaponUnder(_leftShoulder);
+		_rightShoulderHasWeapon = HasWeaponUnder(_rightShoulder);
 			RefreshExternalWeapons();
 		}
 
@@ -212,9 +235,11 @@ namespace GMLM.Game
 				{
 					var w = mecha.WeaponsAll[i];
 					if (w == null) continue;
-					// Exclude weapons parented under hands
+					// Exclude weapons parented under hands and shoulders
 					if (_leftHand != null && w.transform.IsChildOf(_leftHand)) continue;
 					if (_rightHand != null && w.transform.IsChildOf(_rightHand)) continue;
+					if (_leftShoulder != null && w.transform.IsChildOf(_leftShoulder)) continue;
+					if (_rightShoulder != null && w.transform.IsChildOf(_rightShoulder)) continue;
 					_externalWeapons.Add(w);
 				}
 			}
@@ -228,6 +253,8 @@ namespace GMLM.Game
 					if (w == null) continue;
 					if (_leftHand != null && w.transform.IsChildOf(_leftHand)) continue;
 					if (_rightHand != null && w.transform.IsChildOf(_rightHand)) continue;
+					if (_leftShoulder != null && w.transform.IsChildOf(_leftShoulder)) continue;
+					if (_rightShoulder != null && w.transform.IsChildOf(_rightShoulder)) continue;
 					_externalWeapons.Add(w);
 				}
 			}
@@ -511,6 +538,12 @@ namespace GMLM.Game
 
 			// Right Hand (gated by weapon presence if enabled)
 			TryUpdateHand(_rightHand, _rotateRightIfWeaponOnly, _rightHasWeapon, _rightBaseLocalZ, _maxRightHandYaw, _rightHandTurnSpeed, deltaDeg);
+
+			// Left Shoulder (gated by weapon presence if enabled)
+			TryUpdateHand(_leftShoulder, _rotateLeftShoulderIfWeaponOnly, _leftShoulderHasWeapon, _leftShoulderBaseLocalZ, _maxLeftShoulderYaw, _leftShoulderTurnSpeed, deltaDeg);
+
+			// Right Shoulder (gated by weapon presence if enabled)
+			TryUpdateHand(_rightShoulder, _rotateRightShoulderIfWeaponOnly, _rightShoulderHasWeapon, _rightShoulderBaseLocalZ, _maxRightShoulderYaw, _rightShoulderTurnSpeed, deltaDeg);
 
 			// External weapons: rotate towards target only if they opt-in via IsRotateToTarget
 			if (_externalWeapons.Count > 0)
