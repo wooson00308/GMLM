@@ -191,6 +191,10 @@ namespace GMLM.Game
         [SerializeField] private float _dashSpeed = 20.0f;
         [SerializeField] private float _dashCooldown = 1.0f;
         [SerializeField] private float _dashEnergyCost = 20.0f;
+        [SerializeField, Tooltip("대시 속도 커브 (0=시작, 1=끝)")] 
+        private AnimationCurve _dashSpeedCurve = AnimationCurve.EaseInOut(0, 0.3f, 1, 0.1f);
+        [SerializeField, Tooltip("커브 최고점에서의 속도 배율")] 
+        private float _dashPeakSpeedMultiplier = 2.5f;
         private float _dashCooldownTimer = 0f;
         private bool _isDashing = false;
         private Vector3 _dashDir = Vector3.zero; // XY
@@ -200,7 +204,14 @@ namespace GMLM.Game
         [SerializeField] private float _assaultBoostSpeedMultiplier = 1.5f;
         [SerializeField] private float _assaultBoostActivationCost = 15.0f;
         [SerializeField] private float _assaultBoostDrainPerSec = 35.0f;
+        [SerializeField, Tooltip("어썰트 부스트 가속 시간 (초)")] 
+        private float _assaultBoostAccelTime = 0.4f;
+        [SerializeField, Tooltip("어썰트 부스트 감속 시간 (초)")] 
+        private float _assaultBoostDecelTime = 0.2f;
+        [SerializeField, Tooltip("어썰트 부스트 최대 속도 배율")] 
+        private float _assaultBoostMaxSpeedMultiplier = 2.0f;
         private bool _isAssaultBoosting = false;
+        private float _assaultBoostCurrentMultiplier = 1.0f; // 현재 속도 배율
 
         // World-space velocity on XY plane (for predictive aiming, AI, FX)
         public Vector2 WorldVelocity2D { get; private set; } = Vector2.zero;
@@ -238,7 +249,12 @@ namespace GMLM.Game
             {
                 if (_dashRemainingDistance > 0f)
                 {
-                    float step = Mathf.Min(_dashSpeed * dt, _dashRemainingDistance);
+                    // AC6 스타일: 대시 진행도에 따른 가변 속도 적용
+                    float dashProgress = 1f - (_dashRemainingDistance / Mathf.Max(0.01f, _dashDistance));
+                    float curveValue = _dashSpeedCurve.Evaluate(dashProgress);
+                    float currentDashSpeed = _dashSpeed * _dashPeakSpeedMultiplier * curveValue;
+                    float step = Mathf.Min(currentDashSpeed * dt, _dashRemainingDistance);
+                    
                     Vector3 selfPos = transform.position; selfPos.z = 0f;
                     Vector3 next = selfPos + _dashDir * step;
                     next.z = transform.position.z;
@@ -269,11 +285,29 @@ namespace GMLM.Game
                 {
                     _currentEnergy -= drainAmount;
                     _energyRegenCooldown = _energyRegenDelay;
+                    
+                    // AC6 스타일: 점진적 가속
+                    float accelRate = (_assaultBoostMaxSpeedMultiplier - 1f) / Mathf.Max(0.01f, _assaultBoostAccelTime);
+                    _assaultBoostCurrentMultiplier = Mathf.Min(
+                        _assaultBoostMaxSpeedMultiplier,
+                        _assaultBoostCurrentMultiplier + accelRate * dt
+                    );
                 }
                 else
                 {
-                    // Not enough energy, stop assault boost
                     _isAssaultBoosting = false;
+                }
+            }
+            else
+            {
+                // AC6 스타일: 급격한 감속
+                if (_assaultBoostCurrentMultiplier > 1.0f)
+                {
+                    float decelRate = (_assaultBoostMaxSpeedMultiplier - 1f) / Mathf.Max(0.01f, _assaultBoostDecelTime);
+                    _assaultBoostCurrentMultiplier = Mathf.Max(
+                        1.0f,
+                        _assaultBoostCurrentMultiplier - decelRate * dt
+                    );
                 }
             }
 
@@ -421,10 +455,10 @@ namespace GMLM.Game
             Vector3 selfPos = transform.position; selfPos.z = 0f;
             float targetSpeed = Mathf.Max(0f, _moveSpeed);
             
-            // Apply assault boost speed multiplier
-            if (_isAssaultBoosting)
+            // AC6 스타일: 현재 가속 단계 적용
+            if (_isAssaultBoosting || _assaultBoostCurrentMultiplier > 1.0f)
             {
-                targetSpeed *= _assaultBoostSpeedMultiplier;
+                targetSpeed *= _assaultBoostCurrentMultiplier;
             }
             
             float rate = (_currentSpeed < targetSpeed) ? _acceleration : _deceleration;
@@ -551,11 +585,27 @@ namespace GMLM.Game
             return !_isStaggered && !_isInStartLag && !_isDashing && _currentEnergy >= _assaultBoostActivationCost;
         }
 
+        public bool CanAssaultBoostWithSustain(float minDuration = 1.0f)
+        {
+            if(_currentEnergy >= _maxEnergy) return true;
+            float requiredEnergy = _assaultBoostActivationCost + (_assaultBoostDrainPerSec * minDuration);
+            return !_isStaggered && !_isInStartLag && !_isDashing && _currentEnergy >= requiredEnergy;
+        }
+
+        public float CalculateRequiredAssaultBoostDuration(float distance)
+        {
+            float assaultBoostSpeed = _moveSpeed * _assaultBoostMaxSpeedMultiplier;
+            return distance / assaultBoostSpeed;
+        }
+
         public bool TryStartAssaultBoost()
         {
             if (!CanAssaultBoost()) return false;
             if (!SpendEnergy(_assaultBoostActivationCost)) return false;
             _isAssaultBoosting = true;
+            // 가속 시작점을 현재 배율로 설정 (부드러운 전환)
+            if (_assaultBoostCurrentMultiplier < 1.0f) 
+                _assaultBoostCurrentMultiplier = 1.0f;
             return true;
         }
 

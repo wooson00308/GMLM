@@ -341,15 +341,70 @@ MonoBehaviour:
   _maxEnergy: 80
   _currentEnergy: 80
   _energyRegenPerSec: 20
-  _energyRegenDelay: 1
+  _energyRegenDelay: 0.5
   _mechaAnimation: {fileID: 0}
-  _dashDistance: 5.5
-  _dashSpeed: 28
+  _dashDistance: 6.5
+  _dashSpeed: 18
   _dashCooldown: 0
-  _dashEnergyCost: 20
+  _dashEnergyCost: 10
+  _dashSpeedCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: -0.0000010901131
+      value: 0.2000009
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.049982928
+      value: 1.0000129
+      inSlope: -0.087193035
+      outSlope: -0.087193035
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.3001653
+      value: 0.85010284
+      inSlope: -1.0943974
+      outSlope: -1.0943974
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.7
+      value: 0.3
+      inSlope: -1.2493169
+      outSlope: -1.2493169
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0.05
+      inSlope: -0.8798579
+      outSlope: -0.8798579
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _dashPeakSpeedMultiplier: 3
   _assaultBoostSpeedMultiplier: 2.5
   _assaultBoostActivationCost: 15
-  _assaultBoostDrainPerSec: 32
+  _assaultBoostDrainPerSec: 25
+  _assaultBoostAccelTime: 0.4
+  _assaultBoostDecelTime: 0.2
+  _assaultBoostMaxSpeedMultiplier: 2
 --- !u!114 &5560646582550016971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -387,7 +442,7 @@ MonoBehaviour:
   - {fileID: 1373893482891857406}
   - {fileID: 7960837788999343900}
   _dashFxPrefab: {fileID: 6294508013172393196, guid: 5f75716441258274480171c046e368ba, type: 3}
-  _thrusterMaxScale: 0.45
+  _thrusterMaxScale: 0.35
   _moveThrusterMaxScale: 0.2
   _assaultBoostThrusterMaxScale: 0.45
   _moveFxTimeoutSec: 0.3

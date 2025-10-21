@@ -19,6 +19,12 @@ namespace GMLM.Game
 		private float _sinceLastEvade = 0f;
 		private float _evadeMinInterval = 0.4f;
         
+        // 자동 대시 필드
+        private float _autoDashTimer = 0f;
+        private float _autoDashWaitTime = 0f;
+        private float _minAutoDashInterval = 2f;
+        private float _maxAutoDashInterval = 4f;
+        
 
         public MaintainRangeStrafeAction(IBlackboard blackboard, string selfKey = "self", string targetKey = "target", 
             float orbitWeight = 0.8f, float margin = 0.5f, 
@@ -33,6 +39,7 @@ namespace GMLM.Game
             _maxToggleTime = maxToggleTime;
             _toggleWaitTime = Random.Range(_minToggleTime, _maxToggleTime);
 			_sinceLastEvade = 999f;
+            _autoDashWaitTime = Random.Range(_minAutoDashInterval, _maxAutoDashInterval);
         }
 
         // 외부에서 회피 토글 트리거
@@ -105,16 +112,18 @@ namespace GMLM.Game
                 return new UniTask<NodeStatus>(NodeStatus.Running);
             }
             
-            
+            bool shouldUseAssaultBoost = false;
             // 거리 좁히기: 어썰트 부스트 우선, 불가능하면 퀵 대시
             if (dist > desiredRange)
             {
                 float gap = dist - desiredRange;
-                
+                shouldUseAssaultBoost = gap > 1.5f;
                 // 1. 어썰트 부스트 활성화 조건: 중거리~원거리 간격 (1.5m 이상)
-                if (gap > 1.5f)
+                if (shouldUseAssaultBoost)
                 {
-                    if (!mecha.IsAssaultBoosting && mecha.CanAssaultBoost())
+                    // 동적 유지 시간 계산: 타겟까지 거리 ÷ 어썰트 부스트 속도
+                    float requiredDuration = mecha.CalculateRequiredAssaultBoostDuration(gap);
+                    if (!mecha.IsAssaultBoosting && mecha.CanAssaultBoostWithSustain(requiredDuration))
                     {
                         mecha.TryStartAssaultBoost();
                     }
@@ -128,8 +137,11 @@ namespace GMLM.Game
                     }
                 }
                 
-                // 3. 퀵 대시는 어썰트 부스트가 불가능할 때만 사용 (매우 긴 거리)
-                if (gap > mecha.DashDistance * 0.5f && mecha.CanDash() && !mecha.IsAssaultBoosting && !mecha.CanAssaultBoost())
+                // 3. 퀵 대시: 근거리 미세 조정용 (어썰트 부스트 영역 밖에서만)
+                //    원거리에서는 에너지 충전 후 어썰트 부스트 우선 사용
+                if (gap <= 1.5f &&  // 근거리에서만 대시 (어썰트 부스트 영역 밖)
+                    gap > mecha.DashDistance * 0.5f && 
+                    mecha.CanDash() && !shouldUseAssaultBoost)
                 {
                     var sensor = self.GetComponent<MechaProjectileSensor>();
                     Vector3 dashDir = DashUtils.CalculateApproachDirection(
@@ -204,6 +216,19 @@ namespace GMLM.Game
             if (_toggleTimer > _toggleWaitTime)
             {
                 ToggleDirection();
+            }
+
+            // 자동 대시 로직 (어썰트 부스트 중에는 실행 안함)
+            _autoDashTimer += Time.deltaTime;
+            if (_autoDashTimer > _autoDashWaitTime)
+            {
+                if (mecha.CanDash() && !shouldUseAssaultBoost)
+                {
+                    // 현재 접선 방향으로 대시 실행
+                    mecha.TryDash(tangentN);
+                    _autoDashTimer = 0f;
+                    _autoDashWaitTime = Random.Range(_minAutoDashInterval, _maxAutoDashInterval);
+                }
             }
 
             return new UniTask<NodeStatus>(NodeStatus.Running);
