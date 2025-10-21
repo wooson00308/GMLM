@@ -460,6 +460,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Pilot
   _combatStyle: 1
+  _name: 
 --- !u!114 &4185834312548984789
 MonoBehaviour:
   m_ObjectHideFlags: 0

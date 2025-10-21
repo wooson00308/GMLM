@@ -42,7 +42,10 @@ namespace GMLM.Game
         private void Awake()
         {
             _rectTransform = GetComponent<RectTransform>();
-            
+        }
+
+        private void Start()
+        {
             if(_mecha != null) {
                 Initialize(_mecha);
             }
@@ -51,7 +54,7 @@ namespace GMLM.Game
         public void Initialize(Mecha mecha)
         {
             _mecha = mecha;
-            //_nameText.text = mecha.Pilot.Name;
+            _nameText.text = mecha.Pilot.Name;
             _lastStaggerValue = _mecha.CurrentStagger;
             _prevIsStaggered = _mecha.IsStaggered;
             
