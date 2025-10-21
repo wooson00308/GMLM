@@ -587,8 +587,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 6.9, y: -19}
-  m_SizeDelta: {x: 180, y: 8}
+  m_AnchoredPosition: {x: 6.9, y: -17.9784}
+  m_SizeDelta: {x: 180, y: 3.0018}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &4811008109419511979
 CanvasRenderer:
@@ -988,6 +988,18 @@ MonoBehaviour:
   _apBar: {fileID: 5199735871995065792}
   _enBar: {fileID: 2292425906379523269}
   _staggerBar: {fileID: 6274320282260481899}
+  _apBarBackground: {fileID: 0}
+  _apBarFill: {fileID: 0}
+  _enBarBackground: {fileID: 0}
+  _enBarFill: {fileID: 0}
+  _rightHandAmmoBackground: {fileID: 0}
+  _rightHandAmmoFill: {fileID: 0}
+  _leftHandAmmoBackground: {fileID: 0}
+  _leftHandAmmoFill: {fileID: 0}
+  _leftShoulderAmmoBackground: {fileID: 0}
+  _leftShoulderAmmoFill: {fileID: 0}
+  _rightShoulderAmmoBackground: {fileID: 0}
+  _rightShoulderAmmoFill: {fileID: 0}
   _isFollowTarget: 0
   _offset: {x: 0, y: 0}
   _camera: {fileID: 0}
@@ -999,6 +1011,9 @@ MonoBehaviour:
   _hpPulseDuration: 0.25
   _energyPulseColor: {r: 0.7169812, g: 0.7169812, b: 0.7169812, a: 1}
   _energyPulseDuration: 0.25
+  _reloadingColor: {r: 1, g: 0, b: 0, a: 1}
+  _reloadedColor: {r: 1, g: 1, b: 1, a: 1}
+  _reloadPulseSpeed: 2
 --- !u!1 &3116039702434400231
 GameObject:
   m_ObjectHideFlags: 0
@@ -1057,7 +1072,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.6}
+  m_Color: {r: 0.56078434, g: 0.8117647, b: 1, a: 0.6}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1363,7 +1378,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: -0.000022888184, y: 0}
   m_SizeDelta: {x: 180, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &873505384945869935

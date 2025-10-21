@@ -11,13 +11,6 @@ namespace GMLM.Game
         {
             // Blackboard priming
             blackboard.SetTransform("self", this.transform);
-            var self = GetComponent<Mecha>();
-            // Ensure sensor
-            var sensor = GetComponent<MechaProjectileSensor>();
-            if (sensor == null)
-            {
-                sensor = gameObject.AddComponent<MechaProjectileSensor>();
-            }
 
             // Actions
             var updateTarget = new UpdateTargetAction(blackboard, "self", "target", "teamId", 2.0f);
