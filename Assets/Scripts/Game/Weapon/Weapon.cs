@@ -80,7 +80,7 @@ namespace GMLM.Game
         private float _burstTimer = 0f;
         private Mecha _burstSelf;
         private Mecha _burstTarget;
-        private MechaAnimation _mechaAnimation;
+        private MechaModel _mechaAnimation;
         // Odin helper methods
         private bool IsRanged => _type == WeaponType.Ranged;
         private bool IsMelee => _type == WeaponType.Melee;
@@ -114,7 +114,7 @@ namespace GMLM.Game
         private void Awake() {
             _cooldownTimer = 0f;
             _currentAmmo = _magazineSize; // 초기 탄약 수 설정
-            _mechaAnimation = GetComponentInParent<MechaAnimation>();
+            _mechaAnimation = GetComponentInParent<MechaModel>();
         }
 
 		private void Update()

@@ -116,84 +116,64 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Mecha
   _weaponsAll: []
   _teamId: 1
-  _maxHp: 250
-  _currentHp: 250
-  _moveSpeed: 8
-  _acceleration: 30
-  _deceleration: 45
-  _turnRateDeg: 280
-  _maxStagger: 100
-  _staggerDecayRate: 20
-  _staggerDuration: 2.5
-  _staggerDamageMultiplier: 1.5
-  _staggerRecoveryDelay: 0.6
-  _maxEnergy: 80
-  _currentEnergy: 80
-  _energyRegenPerSec: 20
-  _energyRegenDelay: 0.5
-  _mechaAnimation: {fileID: 0}
-  _dashDistance: 6.5
-  _dashSpeed: 18
-  _dashCooldown: 0
-  _dashEnergyCost: 10
-  _dashSpeedCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: -0.0000010901131
-      value: 0.2000009
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.049982928
-      value: 1.0000129
-      inSlope: -0.087193035
-      outSlope: -0.087193035
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.3001653
-      value: 0.85010284
-      inSlope: -1.0943974
-      outSlope: -1.0943974
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.7
-      value: 0.3
-      inSlope: -1.2493169
-      outSlope: -1.2493169
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0.05
-      inSlope: -0.8798579
-      outSlope: -0.8798579
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _dashPeakSpeedMultiplier: 3
-  _assaultBoostSpeedMultiplier: 2.5
-  _assaultBoostActivationCost: 15
-  _assaultBoostDrainPerSec: 25
-  _assaultBoostAccelTime: 0.4
-  _assaultBoostDecelTime: 0.2
-  _assaultBoostMaxSpeedMultiplier: 2
+  _baseStats:
+    maxHp: 250
+    moveSpeed: 8
+    acceleration: 30
+    deceleration: 45
+    turnRateDeg: 280
+    maxEnergy: 80
+    energyRegenPerSec: 20
+    energyRegenDelay: 0.5
+    maxStagger: 100
+    staggerDecayRate: 20
+    staggerDuration: 2.5
+    staggerDamageMultiplier: 1.5
+    staggerRecoveryDelay: 0.6
+    dashDistance: 6.5
+    dashSpeed: 18
+    dashCooldown: 0
+    dashEnergyCost: 10
+    dashSpeedCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0.3
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.05
+        value: 1
+        inSlope: -0.18748668
+        outSlope: -0.18748668
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 0.1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    dashPeakSpeedMultiplier: 3
+    assaultBoostSpeedMultiplier: 2.5
+    assaultBoostActivationCost: 15
+    assaultBoostDrainPerSec: 25
+    assaultBoostAccelTime: 0.4
+    assaultBoostDecelTime: 0.2
+    assaultBoostMaxSpeedMultiplier: 2
 --- !u!114 &5560646582550016971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207,6 +187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.MechaAnimation
   _head: {fileID: 8382441668690903169}
+  _torso: {fileID: 8671686815994868176}
   _leftHand: {fileID: 1500119650488359798}
   _rightHand: {fileID: 2303826057580197284}
   _leftShoulder: {fileID: 892468211335932608}

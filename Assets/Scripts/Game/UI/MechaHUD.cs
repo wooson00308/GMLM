@@ -530,7 +530,7 @@ namespace GMLM.Game
         {
             if (_mecha == null || _mecha.WeaponsAll == null) return null;
 
-            var mechaAnimation = _mecha.GetComponentInChildren<MechaAnimation>();
+            var mechaAnimation = _mecha.GetComponentInChildren<MechaModel>();
             if (mechaAnimation == null) return null;
 
             Transform targetTransform = null;

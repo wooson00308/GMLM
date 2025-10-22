@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace GMLM.Game
 {
-	public class MechaAnimation : MonoBehaviour
+	public class MechaModel : MonoBehaviour
 	{
 		[Header("Rig Transforms")]
 		[SerializeField] private Transform _head;
@@ -50,11 +50,14 @@ namespace GMLM.Game
 
 		// Public properties for external access (optimization)
 		public Transform Head => _head;
+		public Transform Torso => _torso;
+		public Transform Thruster => transform;
 		public Transform LeftHand => _leftHand;
 		public Transform RightHand => _rightHand;
 		public Transform LeftShoulder => _leftShoulder;
 		public Transform RightShoulder => _rightShoulder;
 
+		private Part[] _parts = new Part[5];
 		// Cached base local Z for preserving authored rest pose
 		private float _headBaseLocalZ;
 		private float _leftBaseLocalZ;
@@ -106,6 +109,41 @@ namespace GMLM.Game
 			{
 				SetupDashFxInstances(_dashFxPrefab);
 			}
+		}
+
+		public void AttachPart(PartType type, Part prefab)
+		{
+			var part = Instantiate(prefab);
+			_parts[(int)type] = part;
+
+			Transform parent = null;
+
+			switch (type)
+			{
+				case PartType.Head:
+					parent = Head;
+					break;
+				case PartType.Torso:
+					parent = Torso;
+					break;
+				case PartType.LeftHand:
+					parent = LeftHand;
+					break;
+				case PartType.RightHand:
+					parent = RightHand;
+					break;
+				case PartType.Thruster:
+					parent = Thruster;
+					break;
+			}
+
+			part.transform.SetParent(parent);
+		}
+
+		public void DetachPart(PartType type)
+		{
+			Destroy(_parts[(int)type].gameObject);
+			_parts[(int)type] = null;
 		}
 
 		public void EnableAnimator(bool enable)
@@ -418,33 +456,25 @@ namespace GMLM.Game
 			}
 		}
 
-		public void UpdateMoveThrusters(Vector2 velocity)
-		{
-			if (_isDashFxActive) return;
-			if (_dashFxInstances.Count == 0)
-			{
-				if (_dashFxPrefab != null) SetupDashFxInstances(_dashFxPrefab);
-				if (_dashFxInstances.Count == 0) return;
-			}
-			if (float.IsNaN(velocity.x) || float.IsInfinity(velocity.x) || float.IsNaN(velocity.y) || float.IsInfinity(velocity.y))
-			{
-				for (int i = 0; i < _dashFxInstances.Count; i++) { var fx = _dashFxInstances[i]; if (fx != null) fx.SetActive(false); }
-				return;
-			}
-			float speed = velocity.magnitude;
-			if (speed < 0.01f)
-			{
-				for (int i = 0; i < _dashFxInstances.Count; i++) { var fx = _dashFxInstances[i]; if (fx != null) fx.SetActive(false); }
-				return;
-			}
-
-			// Check if assault boost is active for enhanced thruster effects
-			bool isAssaultBoosting = false;
-			var mecha = GetComponent<Mecha>();
-			if (mecha != null)
-			{
-				isAssaultBoosting = mecha.IsAssaultBoosting;
-			}
+        public void UpdateMoveThrusters(Vector2 velocity, bool isAssaultBoosting = false)
+        {
+            if (_isDashFxActive) return;
+            if (_dashFxInstances.Count == 0)
+            {
+                if (_dashFxPrefab != null) SetupDashFxInstances(_dashFxPrefab);
+                if (_dashFxInstances.Count == 0) return;
+            }
+            if (float.IsNaN(velocity.x) || float.IsInfinity(velocity.x) || float.IsNaN(velocity.y) || float.IsInfinity(velocity.y))
+            {
+                for (int i = 0; i < _dashFxInstances.Count; i++) { var fx = _dashFxInstances[i]; if (fx != null) fx.SetActive(false); }
+                return;
+            }
+            float speed = velocity.magnitude;
+            if (speed < 0.01f)
+            {
+                for (int i = 0; i < _dashFxInstances.Count; i++) { var fx = _dashFxInstances[i]; if (fx != null) fx.SetActive(false); }
+                return;
+            }
 
 			Vector2 dirNorm = velocity.normalized;
 			Vector2 oppDir = -dirNorm;

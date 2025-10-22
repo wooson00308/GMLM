@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Sirenix.OdinInspector;
+using GMLM.Data;
 
 namespace GMLM.Game
 {
@@ -45,60 +46,44 @@ namespace GMLM.Game
 
         [Header("Team & Stats")]
         [SerializeField] private int _teamId = 1; // 1팀, 2팀 ...
-        [SerializeField] private int _maxHp = 100;
-        [SerializeField] private int _currentHp = 100;
-        [SerializeField] private float _moveSpeed = 3.5f; // units/sec (최고 속도)
-        [SerializeField] private float _acceleration = 12f;   // units/sec^2
-        [SerializeField] private float _deceleration = 16f;   // units/sec^2
-        [SerializeField] private float _turnRateDeg = 360f;   // deg/sec, 우측=정면 기준 회전 속도
-        // moved to Weapon
-
-        [Header("Stagger System (AC6 Style)")]
-        [SerializeField, MinValue(1)] private int _maxStagger = 1000; // 스태거 임계값
-        [SerializeField, MinValue(0f)] private float _staggerDecayRate = 200f; // 초당 감소량
-        [SerializeField, MinValue(0.1f)] private float _staggerDuration = 2.5f; // 스태거 지속시간
-        [SerializeField, MinValue(1f)] private float _staggerDamageMultiplier = 1.5f; // 스태거 상태 데미지 배율
-        [SerializeField, MinValue(0f), Tooltip("스태거 회복 시작 지연 (피격 시 리셋)")] private float _staggerRecoveryDelay = 0.6f;
-
-        [Header("Energy")]
-        [SerializeField] private float _maxEnergy = 100f;
-        [SerializeField] private float _currentEnergy = 100f;
-        [SerializeField] private float _energyRegenPerSec = 10f;
-        [SerializeField] private float _energyRegenDelay = 1.0f;
+        [SerializeField] private MechaStats _baseStats;
+        private MechaStats _currentStats;
+        private int _currentHp;
+        private float _currentEnergy;
 
         public int TeamId => _teamId;
-        public int MaxHp => _maxHp;
+        public int MaxHp => _currentStats.maxHp;
         public int CurrentHp => _currentHp;
         public bool IsAlive => _currentHp > 0;
         public bool IsDead => !IsAlive;
-        public float MoveSpeed => _moveSpeed;
-        public float Acceleration => _acceleration;
-        public float Deceleration => _deceleration;
-        public float TurnRateDeg => _turnRateDeg;
-        public float MaxEnergy => _maxEnergy;
+        public float MoveSpeed => _currentStats.moveSpeed;
+        public float Acceleration => _currentStats.acceleration;
+        public float Deceleration => _currentStats.deceleration;
+        public float TurnRateDeg => _currentStats.turnRateDeg;
+        public float MaxEnergy => _currentStats.maxEnergy;
         public float CurrentEnergy => _currentEnergy;
-        public float EnergyRegenPerSec => _energyRegenPerSec;
-        public float EnergyRegenDelay => _energyRegenDelay;
+        public float EnergyRegenPerSec => _currentStats.energyRegenPerSec;
+        public float EnergyRegenDelay => _currentStats.energyRegenDelay;
         public IReadOnlyList<Weapon> WeaponsAll => _weaponsAll;
         public Pilot Pilot => _pilot;
         // Dash parameters for AI calculations
-        public float DashDistance => _dashDistance;
-        public float DashSpeed => _dashSpeed;
-        public float DashCooldown => _dashCooldown;
-        public float DashEnergyCost => _dashEnergyCost;
+        public float DashDistance => _currentStats.dashDistance;
+        public float DashSpeed => _currentStats.dashSpeed;
+        public float DashCooldown => _currentStats.dashCooldown;
+        public float DashEnergyCost => _currentStats.dashEnergyCost;
         public bool IsDashing => _isDashing;
         
         // Assault Boost parameters
-        public float AssaultBoostSpeedMultiplier => _assaultBoostSpeedMultiplier;
+        public float AssaultBoostSpeedMultiplier => _currentStats.assaultBoostSpeedMultiplier;
         public bool IsAssaultBoosting => _isAssaultBoosting;
         
         // Stagger system properties
-        public int MaxStagger => _maxStagger;
+        public int MaxStagger => _currentStats.maxStagger;
         public float CurrentStagger => _currentStagger;
         public bool IsStaggered => _isStaggered;
-        public float StaggerProgress => _currentStagger / _maxStagger;
+        public float StaggerProgress => _currentStagger / _currentStats.maxStagger;
         public float StaggerRecoveryCooldown => _staggerRecoveryCooldown;
-        public float StaggerDuration => _staggerDuration;
+        public float StaggerDuration => _currentStats.staggerDuration;
         public bool IsInStartLag => _isInStartLag;
         
         // 근접무기 중 발사 가능한 무기가 있는지 검사
@@ -167,11 +152,6 @@ namespace GMLM.Game
         // 내부 상태: 현재 이동 속도(스칼라)
         private float _currentSpeed = 0f;
         private float _energyRegenCooldown = 0f;
-        // Evade sensor cache (legacy - now handled by MechaProjectileSensor)
-        // private Vector2 _incomingDir = Vector2.zero;
-        // private float _incomingTTI = float.PositiveInfinity;
-        
-        // Stagger system state
         private float _currentStagger = 0f;
         private bool _isStaggered = false;
         private float _staggerTimer = 0f;
@@ -181,33 +161,14 @@ namespace GMLM.Game
         private bool _isInStartLag = false;
         private float _startLagTimer = 0f;
 
-        [Header("Animation")]
-        [SerializeField] private MechaAnimation _mechaAnimation;
+        private MechaModel _mechaModel;
+        private readonly Dictionary<PartType, IPartData> _equippedParts = new Dictionary<PartType, IPartData>();
 
-        [Header("Dash")]
-        [SerializeField] private float _dashDistance = 3.0f;
-        [SerializeField] private float _dashSpeed = 20.0f;
-        [SerializeField] private float _dashCooldown = 1.0f;
-        [SerializeField] private float _dashEnergyCost = 20.0f;
-        [SerializeField, Tooltip("대시 속도 커브 (0=시작, 1=끝)")] 
-        private AnimationCurve _dashSpeedCurve = AnimationCurve.EaseInOut(0, 0.3f, 1, 0.1f);
-        [SerializeField, Tooltip("커브 최고점에서의 속도 배율")] 
-        private float _dashPeakSpeedMultiplier = 2.5f;
         private float _dashCooldownTimer = 0f;
         private bool _isDashing = false;
         private Vector3 _dashDir = Vector3.zero; // XY
         private float _dashRemainingDistance = 0f;
 
-        [Header("Assault Boost")]
-        [SerializeField] private float _assaultBoostSpeedMultiplier = 1.5f;
-        [SerializeField] private float _assaultBoostActivationCost = 15.0f;
-        [SerializeField] private float _assaultBoostDrainPerSec = 35.0f;
-        [SerializeField, Tooltip("어썰트 부스트 가속 시간 (초)")] 
-        private float _assaultBoostAccelTime = 0.4f;
-        [SerializeField, Tooltip("어썰트 부스트 감속 시간 (초)")] 
-        private float _assaultBoostDecelTime = 0.2f;
-        [SerializeField, Tooltip("어썰트 부스트 최대 속도 배율")] 
-        private float _assaultBoostMaxSpeedMultiplier = 2.0f;
         private bool _isAssaultBoosting = false;
         private float _assaultBoostCurrentMultiplier = 1.0f; // 현재 속도 배율
 
@@ -225,10 +186,16 @@ namespace GMLM.Game
         {
             MechaRegistry.Register(this);
             RefreshWeapons();
-            if (_mechaAnimation == null)
+            if (_mechaModel == null)
             {
-                _mechaAnimation = GetComponentInChildren<MechaAnimation>(true);
+                _mechaModel = GetComponentInChildren<MechaModel>(true);
             }
+            
+            // 스탯 초기화
+            RecalculateStats();
+            _currentHp = _currentStats.maxHp;
+            _currentEnergy = _currentStats.maxEnergy;
+            
             _lastPosition = transform.position;
             WorldVelocity2D = Vector2.zero;
         }
@@ -248,9 +215,9 @@ namespace GMLM.Game
                 if (_dashRemainingDistance > 0f)
                 {
                     // AC6 스타일: 대시 진행도에 따른 가변 속도 적용
-                    float dashProgress = 1f - (_dashRemainingDistance / Mathf.Max(0.01f, _dashDistance));
-                    float curveValue = _dashSpeedCurve.Evaluate(dashProgress);
-                    float currentDashSpeed = _dashSpeed * _dashPeakSpeedMultiplier * curveValue;
+                    float dashProgress = 1f - (_dashRemainingDistance / Mathf.Max(0.01f, _currentStats.dashDistance));
+                    float curveValue = _currentStats.dashSpeedCurve.Evaluate(dashProgress);
+                    float currentDashSpeed = _currentStats.dashSpeed * _currentStats.dashPeakSpeedMultiplier * curveValue;
                     float step = Mathf.Min(currentDashSpeed * dt, _dashRemainingDistance);
                     
                     Vector3 selfPos = transform.position; selfPos.z = 0f;
@@ -258,17 +225,17 @@ namespace GMLM.Game
                     next.z = transform.position.z;
                     transform.position = next;
                     _dashRemainingDistance -= step;
-					if (_mechaAnimation != null)
+					if (_mechaModel != null)
 					{
-						_mechaAnimation.UpdateDashThrusters();
+						_mechaModel.UpdateDashThrusters();
 					}
                 }
                 else
                 {
                     _isDashing = false;
-					if (_mechaAnimation != null)
+					if (_mechaModel != null)
 					{
-						_mechaAnimation.StopDashFx();
+						_mechaModel.StopDashFx();
 					}
 					
 					// 예약 시스템 제거: 대시 완료 후 자연스럽게 AttackAction에서 공격 처리
@@ -278,16 +245,16 @@ namespace GMLM.Game
             // Assault Boost energy drain
             if (_isAssaultBoosting)
             {
-                float drainAmount = _assaultBoostDrainPerSec * dt;
+                float drainAmount = _currentStats.assaultBoostDrainPerSec * dt;
                 if (_currentEnergy >= drainAmount)
                 {
                     _currentEnergy -= drainAmount;
-                    _energyRegenCooldown = _energyRegenDelay;
+                    _energyRegenCooldown = _currentStats.energyRegenDelay;
                     
                     // AC6 스타일: 점진적 가속
-                    float accelRate = (_assaultBoostMaxSpeedMultiplier - 1f) / Mathf.Max(0.01f, _assaultBoostAccelTime);
+                    float accelRate = (_currentStats.assaultBoostMaxSpeedMultiplier - 1f) / Mathf.Max(0.01f, _currentStats.assaultBoostAccelTime);
                     _assaultBoostCurrentMultiplier = Mathf.Min(
-                        _assaultBoostMaxSpeedMultiplier,
+                        _currentStats.assaultBoostMaxSpeedMultiplier,
                         _assaultBoostCurrentMultiplier + accelRate * dt
                     );
                 }
@@ -301,7 +268,7 @@ namespace GMLM.Game
                 // AC6 스타일: 급격한 감속
                 if (_assaultBoostCurrentMultiplier > 1.0f)
                 {
-                    float decelRate = (_assaultBoostMaxSpeedMultiplier - 1f) / Mathf.Max(0.01f, _assaultBoostDecelTime);
+                    float decelRate = (_currentStats.assaultBoostMaxSpeedMultiplier - 1f) / Mathf.Max(0.01f, _currentStats.assaultBoostDecelTime);
                     _assaultBoostCurrentMultiplier = Mathf.Max(
                         1.0f,
                         _assaultBoostCurrentMultiplier - decelRate * dt
@@ -317,10 +284,10 @@ namespace GMLM.Game
             }
             else
             {
-                if (_currentEnergy < _maxEnergy)
-                {
-                    _currentEnergy = Mathf.Min(_maxEnergy, _currentEnergy + _energyRegenPerSec * dt);
-                }
+            if (_currentEnergy < _currentStats.maxEnergy)
+            {
+                _currentEnergy = Mathf.Min(_currentStats.maxEnergy, _currentEnergy + _currentStats.energyRegenPerSec * dt);
+            }
             }
             
             // Stagger system update
@@ -352,33 +319,118 @@ namespace GMLM.Game
         {
             _teamId = teamId;
         }
+        
+        public void AddPart(IPartData part)
+        {
+            if (part == null) return;
+            
+            // MechaModel 초기화
+            if (_mechaModel == null)
+            {
+                _mechaModel = GetComponentInChildren<MechaModel>(true);
+                if (_mechaModel == null)
+                {
+                    Debug.LogError("MechaModel not found!");
+                    return;
+                }
+            }
+            
+            PartType type = part.PartType;
+            
+            // 기존 파츠가 있으면 먼저 탈착
+            if (_equippedParts.TryGetValue(type, out var existing))
+            {
+                RemovePart(existing);
+            }
+            
+            // 새 파츠 장착
+            part.AttachPrefab(_mechaModel);
+            _equippedParts[type] = part;
+            
+            // 스탯 재계산
+            RecalculateStats();
+        }
+
+        public void RemovePart(IPartData part)
+        {
+            if (part == null) return;
+            
+            PartType type = part.PartType;
+            
+            // Dictionary에서 파츠 제거
+            if (_equippedParts.ContainsKey(type) && _equippedParts[type] == part)
+            {
+                _equippedParts.Remove(type);
+            }
+            
+            part.DetachPrefab(_mechaModel);
+            
+            // 스탯 재계산
+            RecalculateStats();
+        }
+        
+        private void RecalculateStats()
+        {
+            // 베이스 스탯에서 시작
+            _currentStats = _baseStats.Clone();
+            
+            // 모든 장착된 파츠 순회하며 스탯 적용
+            foreach (var part in _equippedParts.Values)
+            {
+                ApplyPartStats(_currentStats, part.Stats);
+            }
+        }
+        
+        private void ApplyPartStats(MechaStats target, MechaStats partStats)
+        {
+            // 가산 그룹: HP, Energy 계열 (절대값 더하기)
+            target.maxHp += partStats.maxHp;
+            target.maxEnergy += partStats.maxEnergy;
+            target.maxStagger += partStats.maxStagger;
+            
+            // 승산 그룹: 속도, 가감속 계열 (배율로 처리)
+            target.moveSpeed *= (1f + partStats.moveSpeed);
+            target.acceleration *= (1f + partStats.acceleration);
+            target.deceleration *= (1f + partStats.deceleration);
+            target.turnRateDeg *= (1f + partStats.turnRateDeg);
+            target.energyRegenPerSec *= (1f + partStats.energyRegenPerSec);
+            target.staggerDecayRate *= (1f + partStats.staggerDecayRate);
+            target.dashSpeed *= (1f + partStats.dashSpeed);
+            target.dashPeakSpeedMultiplier *= (1f + partStats.dashPeakSpeedMultiplier);
+            target.assaultBoostSpeedMultiplier *= (1f + partStats.assaultBoostSpeedMultiplier);
+            target.assaultBoostMaxSpeedMultiplier *= (1f + partStats.assaultBoostMaxSpeedMultiplier);
+            
+            // 최소값 그룹: 지연시간 계열 (더 빠른 쪽 채택)
+            target.energyRegenDelay = Mathf.Min(target.energyRegenDelay, partStats.energyRegenDelay);
+            target.staggerRecoveryDelay = Mathf.Min(target.staggerRecoveryDelay, partStats.staggerRecoveryDelay);
+            target.dashCooldown = Mathf.Min(target.dashCooldown, partStats.dashCooldown);
+            target.assaultBoostActivationCost = Mathf.Min(target.assaultBoostActivationCost, partStats.assaultBoostActivationCost);
+            target.assaultBoostDrainPerSec = Mathf.Min(target.assaultBoostDrainPerSec, partStats.assaultBoostDrainPerSec);
+            target.assaultBoostAccelTime = Mathf.Min(target.assaultBoostAccelTime, partStats.assaultBoostAccelTime);
+            target.assaultBoostDecelTime = Mathf.Min(target.assaultBoostDecelTime, partStats.assaultBoostDecelTime);
+            
+            // 덧셈 그룹: 거리, 비용, 지속시간
+            target.dashDistance += partStats.dashDistance;
+            target.dashEnergyCost += partStats.dashEnergyCost;
+            target.staggerDuration += partStats.staggerDuration;
+            
+            // 곱셈 그룹: 데미지 배율
+            target.staggerDamageMultiplier *= (1f + partStats.staggerDamageMultiplier);
+        }
 
         public void RefreshWeapons()
         {
             _weaponsAll.Clear();
             GetComponentsInChildren(true, _weaponsAll);
 			// Ensure MechaAnimation updates internal weapon presence caches (hands/external)
-			if (_mechaAnimation == null)
+			if (_mechaModel == null)
 			{
-				_mechaAnimation = GetComponentInChildren<MechaAnimation>(true);
+				_mechaModel = GetComponentInChildren<MechaModel>(true);
 			}
-			if (_mechaAnimation != null)
+			if (_mechaModel != null)
 			{
-				_mechaAnimation.RefreshWeaponPresence();
+				_mechaModel.RefreshWeaponPresence();
 			}
-        }
-
-        public void InitializeStats(int maxHp, float moveSpeed, float attackSpeed, int attackPower)
-        {
-            _maxHp = Mathf.Max(1, maxHp);
-            _currentHp = _maxHp;
-            _moveSpeed = Mathf.Max(0f, moveSpeed);
-            // kept for backwards compatibility params, but no longer stored
-        }
-
-        public void TakeDamage(int amount)
-        {
-            TakeDamage(amount, 0);
         }
         
         public void TakeDamage(int damage, int impact)
@@ -391,7 +443,7 @@ namespace GMLM.Game
                 _currentStagger += impact;
                 
                 // Check for stagger threshold
-                if (_currentStagger >= _maxStagger && !_isStaggered)
+                if (_currentStagger >= _currentStats.maxStagger && !_isStaggered)
                 {
                     EnterStagger();
                 }
@@ -400,17 +452,17 @@ namespace GMLM.Game
             // 스태거 회복 지연: 스태거 중이 아니고 게이지가 남아있다면 어떤 피해든 지연 타이머 리셋
             if (!_isStaggered && _currentStagger > 0f)
             {
-                _staggerRecoveryCooldown = _staggerRecoveryDelay;
+                _staggerRecoveryCooldown = _currentStats.staggerRecoveryDelay;
             }
             
             // Apply damage with stagger multiplier
             int finalDamage = damage;
             if (_isStaggered)
             {
-                finalDamage = Mathf.RoundToInt(damage * _staggerDamageMultiplier);
+                finalDamage = Mathf.RoundToInt(damage * _currentStats.staggerDamageMultiplier);
             }
             
-            _currentHp = Mathf.Clamp(_currentHp - Mathf.Max(0, finalDamage), 0, _maxHp);
+            _currentHp = Mathf.Clamp(_currentHp - Mathf.Max(0, finalDamage), 0, _currentStats.maxHp);
             if (_currentHp <= 0)
             {
                 gameObject.SetActive(false);
@@ -428,15 +480,15 @@ namespace GMLM.Game
             if (dir.sqrMagnitude <= 0f) return false;
 			AimTowards(dir);
             // 가/감속 적용
-            float targetSpeed = Mathf.Max(0f, _moveSpeed);
-            float rate = (_currentSpeed < targetSpeed) ? _acceleration : _deceleration;
+            float targetSpeed = Mathf.Max(0f, _currentStats.moveSpeed);
+            float rate = (_currentSpeed < targetSpeed) ? _currentStats.acceleration : _currentStats.deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.deltaTime);
             Vector3 next = selfPos + dir * _currentSpeed * Time.deltaTime;
             next.z = transform.position.z;
             transform.position = next;
-			if (_mechaAnimation != null)
+			if (_mechaModel != null)
 			{
-				_mechaAnimation.UpdateMoveThrusters(new Vector2(dir.x, dir.y) * _currentSpeed);
+				_mechaModel.UpdateMoveThrusters(new Vector2(dir.x, dir.y) * _currentSpeed, _isAssaultBoosting);
 			}
             return true;
         }
@@ -451,7 +503,7 @@ namespace GMLM.Game
             dir.Normalize();
 			if (rotateToMovement) AimTowards(dir);
             Vector3 selfPos = transform.position; selfPos.z = 0f;
-            float targetSpeed = Mathf.Max(0f, _moveSpeed);
+            float targetSpeed = Mathf.Max(0f, _currentStats.moveSpeed);
             
             // AC6 스타일: 현재 가속 단계 적용
             if (_isAssaultBoosting || _assaultBoostCurrentMultiplier > 1.0f)
@@ -459,14 +511,14 @@ namespace GMLM.Game
                 targetSpeed *= _assaultBoostCurrentMultiplier;
             }
             
-            float rate = (_currentSpeed < targetSpeed) ? _acceleration : _deceleration;
+            float rate = (_currentSpeed < targetSpeed) ? _currentStats.acceleration : _currentStats.deceleration;
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, targetSpeed, rate * Time.deltaTime);
             Vector3 next = selfPos + dir * _currentSpeed * Time.deltaTime;
             next.z = transform.position.z;
             transform.position = next;
-			if (_mechaAnimation != null)
+			if (_mechaModel != null)
 			{
-				_mechaAnimation.UpdateMoveThrusters(new Vector2(dir.x, dir.y) * _currentSpeed);
+				_mechaModel.UpdateMoveThrusters(new Vector2(dir.x, dir.y) * _currentSpeed, _isAssaultBoosting);
 			}
             return true;
         }
@@ -489,13 +541,13 @@ namespace GMLM.Game
             if (to.sqrMagnitude <= 0f) return;
             from.Normalize(); to.Normalize();
 			// 1) 머리/손 먼저 조준
-			if (_mechaAnimation != null)
+			if (_mechaModel != null)
 			{
-				_mechaAnimation.UpdateAiming(to);
-				if (_mechaAnimation.EvaluateBodyAssist(to, out float residualYawDeg, out int sign))
+				_mechaModel.UpdateAiming(to);
+				if (_mechaModel.EvaluateBodyAssist(to, out float residualYawDeg, out int sign))
 				{
-					// 2) 보조 회전: 잔여 각도만큼, 동체 회전 속도 제한
-					float stepDeg = Mathf.Min(residualYawDeg, Mathf.Max(0f, _turnRateDeg) * Time.deltaTime);
+                // 2) 보조 회전: 잔여 각도만큼, 동체 회전 속도 제한
+                float stepDeg = Mathf.Min(residualYawDeg, Mathf.Max(0f, _currentStats.turnRateDeg) * Time.deltaTime);
 					if (stepDeg > 0f)
 					{
 						float stepRad = Mathf.Deg2Rad * (sign * stepDeg);
@@ -506,8 +558,8 @@ namespace GMLM.Game
 			}
 			else
 			{
-				// 폴백: 기존 회전 로직
-				float maxRad = Mathf.Deg2Rad * Mathf.Max(0f, _turnRateDeg) * Time.deltaTime;
+                // 폴백: 기존 회전 로직
+                float maxRad = Mathf.Deg2Rad * Mathf.Max(0f, _currentStats.turnRateDeg) * Time.deltaTime;
 				Vector3 newDir = Vector3.RotateTowards(from, to, maxRad, 0f);
 				if (newDir.sqrMagnitude > 0f) transform.right = newDir;
 			}
@@ -531,18 +583,18 @@ namespace GMLM.Game
             amount = Mathf.Max(0f, amount);
             if (_currentEnergy < amount) return false;
             _currentEnergy -= amount;
-            _energyRegenCooldown = _energyRegenDelay;
+            _energyRegenCooldown = _currentStats.energyRegenDelay;
             return true;
         }
 
         public void AddEnergy(float amount)
         {
-            _currentEnergy = Mathf.Clamp(_currentEnergy + Mathf.Max(0f, amount), 0f, _maxEnergy);
+            _currentEnergy = Mathf.Clamp(_currentEnergy + Mathf.Max(0f, amount), 0f, _currentStats.maxEnergy);
         }
 
         public bool CanDash()
         {
-            return !_isStaggered && !_isInStartLag && !_isDashing && _dashCooldownTimer <= 0f && _currentEnergy >= _dashEnergyCost;
+            return !_isStaggered && !_isInStartLag && !_isDashing && _dashCooldownTimer <= 0f && _currentEnergy >= _currentStats.dashEnergyCost;
         }
 
         public bool TryDash(Vector3 direction)
@@ -552,7 +604,7 @@ namespace GMLM.Game
             if (!CanDash()) return false;
             dir.Normalize();
 
-            if (!SpendEnergy(_dashEnergyCost)) return false;
+            if (!SpendEnergy(_currentStats.dashEnergyCost)) return false;
 
             // Stop assault boost when dashing
             if (_isAssaultBoosting)
@@ -562,12 +614,12 @@ namespace GMLM.Game
 
             _isDashing = true;
             _dashDir = dir;
-            _dashRemainingDistance = Mathf.Max(0f, _dashDistance);
-            _dashCooldownTimer = _dashCooldown;
-			if (_mechaAnimation != null)
+            _dashRemainingDistance = Mathf.Max(0f, _currentStats.dashDistance);
+            _dashCooldownTimer = _currentStats.dashCooldown;
+			if (_mechaModel != null)
 			{
-				float dashDuration = (_dashSpeed > 0f) ? (_dashDistance / _dashSpeed) : 0.15f;
-				_mechaAnimation.PlayDashFx(new Vector2(dir.x, dir.y), dashDuration);
+                float dashDuration = (_currentStats.dashSpeed > 0f) ? (_currentStats.dashDistance / _currentStats.dashSpeed) : 0.15f;
+				_mechaModel.PlayDashFx(new Vector2(dir.x, dir.y), dashDuration);
 			}
             return true;
         }
@@ -580,26 +632,26 @@ namespace GMLM.Game
         #region Assault Boost API
         public bool CanAssaultBoost()
         {
-            return !_isStaggered && !_isInStartLag && !_isDashing && _currentEnergy >= _assaultBoostActivationCost;
+            return !_isStaggered && !_isInStartLag && !_isDashing && _currentEnergy >= _currentStats.assaultBoostActivationCost;
         }
 
         public bool CanAssaultBoostWithSustain(float minDuration = 1.0f)
         {
-            if(_currentEnergy >= _maxEnergy) return true;
-            float requiredEnergy = _assaultBoostActivationCost + (_assaultBoostDrainPerSec * minDuration);
+            if(_currentEnergy >= _currentStats.maxEnergy) return true;
+            float requiredEnergy = _currentStats.assaultBoostActivationCost + (_currentStats.assaultBoostDrainPerSec * minDuration);
             return !_isStaggered && !_isInStartLag && !_isDashing && _currentEnergy >= requiredEnergy;
         }
 
         public float CalculateRequiredAssaultBoostDuration(float distance)
         {
-            float assaultBoostSpeed = _moveSpeed * _assaultBoostMaxSpeedMultiplier;
+            float assaultBoostSpeed = _currentStats.moveSpeed * _currentStats.assaultBoostMaxSpeedMultiplier;
             return distance / assaultBoostSpeed;
         }
 
         public bool TryStartAssaultBoost()
         {
             if (!CanAssaultBoost()) return false;
-            if (!SpendEnergy(_assaultBoostActivationCost)) return false;
+            if (!SpendEnergy(_currentStats.assaultBoostActivationCost)) return false;
             _isAssaultBoosting = true;
             // 가속 시작점을 현재 배율로 설정 (부드러운 전환)
             if (_assaultBoostCurrentMultiplier < 1.0f) 
@@ -639,7 +691,7 @@ namespace GMLM.Game
                 // 지연이 끝나면 스태거 게이지 감소 시작
                 if (_staggerRecoveryCooldown <= 0f && _currentStagger > 0f)
                 {
-                    _currentStagger = Mathf.Max(0f, _currentStagger - _staggerDecayRate * deltaTime);
+                    _currentStagger = Mathf.Max(0f, _currentStagger - _currentStats.staggerDecayRate * deltaTime);
                 }
             }
         }
@@ -648,8 +700,8 @@ namespace GMLM.Game
         {
             if (_isStaggered) return;
             _isStaggered = true;
-            _staggerTimer = _staggerDuration;
-            _currentStagger = _maxStagger; // Cap at max when staggered
+            _staggerTimer = _currentStats.staggerDuration;
+            _currentStagger = _currentStats.maxStagger; // Cap at max when staggered
             _staggerRecoveryCooldown = 0f; // 스태거 중에는 회복 지연 의미 없음
             
             // StartLag 해제
@@ -662,9 +714,9 @@ namespace GMLM.Game
                 _isAssaultBoosting = false;
             }
             
-            if (_mechaAnimation != null)
+            if (_mechaModel != null)
             {
-                _mechaAnimation.PlayStaggerEffect();
+                _mechaModel.PlayStaggerEffect();
             }
         }
         
@@ -673,7 +725,7 @@ namespace GMLM.Game
             _isStaggered = false;
             _staggerTimer = 0f;
             _currentStagger = 0f; // Reset stagger gauge after stagger ends
-            _staggerRecoveryCooldown = _staggerRecoveryDelay; // 회복 시작까지 지연
+            _staggerRecoveryCooldown = _currentStats.staggerRecoveryDelay; // 회복 시작까지 지연
             
             // TODO: Add stagger recovery effects here
         }

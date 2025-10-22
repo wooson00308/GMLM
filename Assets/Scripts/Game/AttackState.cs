@@ -18,7 +18,7 @@ public class AttackState : StateMachineBehaviour
     // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        var mechAnim = animator.GetComponent<MechaAnimation>();
+        var mechAnim = animator.GetComponent<MechaModel>();
         if (mechAnim != null)
         {
             mechAnim.EnableAnimator(false);
