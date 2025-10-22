@@ -12,17 +12,29 @@ namespace GMLM.AI
         Multiply
     }
     
-    public class UtilityScorer : DecoratorNode
+    public class UtilityScorer : DecoratorNode, IUtilityScorer
     {
         public string Name { get; }
         public List<Consideration> Considerations { get; }
         private readonly ScoreAggregationType _aggregationType;
+        private readonly IScoreAggregationStrategy _aggregationStrategy;
 
+        // 기존 API 호환성을 위한 생성자
         public UtilityScorer(Node child, List<Consideration> considerations, ScoreAggregationType aggregationType = ScoreAggregationType.Average, string name = "") : base(child)
         {
             Name = string.IsNullOrEmpty(name) ? child.GetType().Name : name;
             Considerations = considerations;
             _aggregationType = aggregationType;
+            _aggregationStrategy = CreateStrategyFromType(aggregationType);
+        }
+
+        // 새로운 전략 패턴 기반 생성자
+        public UtilityScorer(Node child, List<Consideration> considerations, IScoreAggregationStrategy aggregationStrategy, string name = "") : base(child)
+        {
+            Name = string.IsNullOrEmpty(name) ? child.GetType().Name : name;
+            Considerations = considerations;
+            _aggregationType = ScoreAggregationType.Average; // 기본값
+            _aggregationStrategy = aggregationStrategy;
         }
 
         public float GetScore()
@@ -33,19 +45,23 @@ namespace GMLM.AI
             }
 
             var scores = Considerations.Select(c => c.GetScore()).ToList();
+            return _aggregationStrategy.Aggregate(scores);
+        }
 
-            switch (_aggregationType)
+        private IScoreAggregationStrategy CreateStrategyFromType(ScoreAggregationType type)
+        {
+            switch (type)
             {
                 case ScoreAggregationType.Average:
-                    return scores.Average();
+                    return new AverageAggregationStrategy();
                 case ScoreAggregationType.Min:
-                    return scores.Min();
+                    return new MinAggregationStrategy();
                 case ScoreAggregationType.Max:
-                    return scores.Max();
+                    return new MaxAggregationStrategy();
                 case ScoreAggregationType.Multiply:
-                    return scores.Aggregate(1f, (acc, score) => acc * score);
+                    return new MultiplyAggregationStrategy();
                 default:
-                    return 0f;
+                    return new AverageAggregationStrategy();
             }
         }
 
@@ -57,6 +73,14 @@ namespace GMLM.AI
         public override UniTask<NodeStatus> Execute()
         {
             return Child.Execute();
+        }
+
+        // IUtilityScorer 인터페이스 구현
+        IReadOnlyList<IConsideration> IUtilityScorer.Considerations => Considerations?.AsReadOnly();
+        
+        System.Threading.Tasks.Task<NodeStatus> IUtilityScorer.Execute()
+        {
+            return Execute().AsTask();
         }
     }
 } 

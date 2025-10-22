@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace GMLM.AI
 {
-    public abstract class Consideration
+    public abstract class Consideration : IConsideration
     {
         protected readonly IBlackboard Blackboard;
         protected readonly AnimationCurve ResponseCurve;

@@ -108,6 +108,7 @@ namespace GMLM.Game
 		public float ReloadTime => _reloadTime;
 		public int CurrentAmmo => _currentAmmo;
 		public bool IsReloading => _isReloading;
+		public float ReloadProgress => _isReloading ? (1f - Mathf.Clamp01(_reloadTimer / _reloadTime)) : 1f;
 		public bool CanFire => !_isReloading && _currentAmmo > 0 && _cooldownTimer <= 0f && !_isBurstInProgress && !_isPreDelayActive;
 
         private void Awake() {

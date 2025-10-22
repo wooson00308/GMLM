@@ -1,17 +1,18 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Animations;
+using System.Linq;
 
 namespace GMLM.Game
 {
 	public class MechaAnimation : MonoBehaviour
 	{
-	[Header("Rig Transforms")]
-	[SerializeField] private Transform _head;
-	[SerializeField] private Transform _leftHand;
-	[SerializeField] private Transform _rightHand;
-	[SerializeField] private Transform _leftShoulder;
-	[SerializeField] private Transform _rightShoulder;
+		[Header("Rig Transforms")]
+		[SerializeField] private Transform _head;
+		[SerializeField] private Transform _leftHand;
+		[SerializeField] private Transform _rightHand;
+		[SerializeField] private Transform _leftShoulder;
+		[SerializeField] private Transform _rightShoulder;
 
 		[Header("Yaw Limits (±deg)")]
 		[SerializeField] private float _maxHeadYaw = 70f;
@@ -72,13 +73,13 @@ namespace GMLM.Game
 		private readonly List<Weapon> _externalWeapons = new List<Weapon>();
 
 		[Header("Thrusters")]
-		[SerializeField, Tooltip("버니어 위치 리스트")] private List<Transform> _thrusterPoints;
 		[SerializeField, Tooltip("대시 FX 프리팹(선택)")] private GameObject _dashFxPrefab;
 		[SerializeField, Tooltip("스러스터 최대 크기(스케일)")] private float _thrusterMaxScale = 0.85f;
 		[SerializeField, Tooltip("이동 시 스러스터 최대 크기 (대시보다 작게 설정 권장)")] private float _moveThrusterMaxScale = 0.6f;
 		[SerializeField, Tooltip("어썰트 부스트 시 스러스터 최대 크기 (더 강력한 연출)")] private float _assaultBoostThrusterMaxScale = 1.2f;
 		[SerializeField, Tooltip("이동 FX 비활성화 지연(초)")] private float _moveFxTimeoutSec = 0.12f;
 		[SerializeField, Tooltip("이동 FX 페이드아웃 시간(초)")] private float _moveFxFadeOutSec = 0.2f;
+		private Transform[] _thrusterPoints;
 		private readonly List<GameObject> _dashFxInstances = new List<GameObject>();
 		private bool _isDashFxActive = false;
 		private Vector2 _dashOppDir = Vector2.right;
@@ -93,14 +94,17 @@ namespace GMLM.Game
 		{
 			CacheBaseLocalRotations();
 			RefreshWeaponPresence();
+			_animator = GetComponent<Animator>();
+			EnableAnimator(false);
+
+			// Cache thruster points once at startup
+			CacheThrusterPoints();
+
 			// Ensure thruster FX instances exist before first movement
 			if (_dashFxPrefab != null && _dashFxInstances.Count == 0)
 			{
 				SetupDashFxInstances(_dashFxPrefab);
 			}
-			_animator = GetComponent<Animator>();
-
-			EnableAnimator(false);
 		}
 
 		public void EnableAnimator(bool enable)
@@ -135,7 +139,7 @@ namespace GMLM.Game
 		{
 			if (hand == null || maxYaw <= 0f) return;
 			if (gateEnabled && !hasWeapon) return;
-			
+
 			UpdateYawLocal(hand, baseZ, maxYaw, turnSpeedDeg, deltaDeg);
 		}
 
@@ -206,11 +210,19 @@ namespace GMLM.Game
 		/// </summary>
 		public void CacheBaseLocalRotations()
 		{
-		if (_head != null) _headBaseLocalZ = _head.localEulerAngles.z;
-		if (_leftHand != null) _leftBaseLocalZ = _leftHand.localEulerAngles.z;
-		if (_rightHand != null) _rightBaseLocalZ = _rightHand.localEulerAngles.z;
-		if (_leftShoulder != null) _leftShoulderBaseLocalZ = _leftShoulder.localEulerAngles.z;
-		if (_rightShoulder != null) _rightShoulderBaseLocalZ = _rightShoulder.localEulerAngles.z;
+			if (_head != null) _headBaseLocalZ = _head.localEulerAngles.z;
+			if (_leftHand != null) _leftBaseLocalZ = _leftHand.localEulerAngles.z;
+			if (_rightHand != null) _rightBaseLocalZ = _rightHand.localEulerAngles.z;
+			if (_leftShoulder != null) _leftShoulderBaseLocalZ = _leftShoulder.localEulerAngles.z;
+			if (_rightShoulder != null) _rightShoulderBaseLocalZ = _rightShoulder.localEulerAngles.z;
+		}
+
+		/// <summary>
+		/// 스러스터 포인트들을 한 번만 검색하여 캐시한다.
+		/// </summary>
+		private void CacheThrusterPoints()
+		{
+			_thrusterPoints = transform.GetComponentsInChildren<Transform>().Where(t => t.name.Contains("Thruster")).ToArray();
 		}
 
 		/// <summary>
@@ -218,10 +230,10 @@ namespace GMLM.Game
 		/// </summary>
 		public void RefreshWeaponPresence()
 		{
-		_leftHasWeapon = HasWeaponUnder(_leftHand);
-		_rightHasWeapon = HasWeaponUnder(_rightHand);
-		_leftShoulderHasWeapon = HasWeaponUnder(_leftShoulder);
-		_rightShoulderHasWeapon = HasWeaponUnder(_rightShoulder);
+			_leftHasWeapon = HasWeaponUnder(_leftHand);
+			_rightHasWeapon = HasWeaponUnder(_rightHand);
+			_leftShoulderHasWeapon = HasWeaponUnder(_leftShoulder);
+			_rightShoulderHasWeapon = HasWeaponUnder(_rightShoulder);
 			RefreshExternalWeapons();
 		}
 
@@ -345,7 +357,7 @@ namespace GMLM.Game
 				var fx = _dashFxInstances[i];
 				if (fx == null) continue;
 				Vector2 offsetNorm;
-				if (_thrusterPoints != null && _thrusterPoints.Count == _dashFxInstances.Count)
+				if (_thrusterPoints != null && _thrusterPoints.Length == _dashFxInstances.Count)
 				{
 					var tp = _thrusterPoints[i];
 					if (tp == null) { fx.SetActive(false); continue; }
@@ -375,7 +387,7 @@ namespace GMLM.Game
 				var fx = _dashFxInstances[i];
 				if (fx == null) continue;
 				Vector2 offsetNorm;
-				if (_thrusterPoints != null && _thrusterPoints.Count == _dashFxInstances.Count)
+				if (_thrusterPoints != null && _thrusterPoints.Length == _dashFxInstances.Count)
 				{
 					var tp = _thrusterPoints[i];
 					if (tp == null) { fx.SetActive(false); continue; }
@@ -441,7 +453,7 @@ namespace GMLM.Game
 				var fx = _dashFxInstances[i];
 				if (fx == null) continue;
 				Vector2 offsetNorm;
-				if (_thrusterPoints != null && _thrusterPoints.Count == _dashFxInstances.Count)
+				if (_thrusterPoints != null && _thrusterPoints.Length == _dashFxInstances.Count)
 				{
 					var tp = _thrusterPoints[i];
 					if (tp == null) { fx.SetActive(false); continue; }
@@ -471,12 +483,12 @@ namespace GMLM.Game
 		{
 			if (prefab == null) return;
 			if (_dashFxInstances.Count > 0) return;
-			if (_thrusterPoints == null || _thrusterPoints.Count == 0)
+			if (_thrusterPoints == null || _thrusterPoints.Length == 0)
 			{
 				CreateFxInstance(prefab, transform);
 				return;
 			}
-			for (int i = 0; i < _thrusterPoints.Count; i++)
+			for (int i = 0; i < _thrusterPoints.Length; i++)
 			{
 				var pt = _thrusterPoints[i];
 				if (pt == null) continue;

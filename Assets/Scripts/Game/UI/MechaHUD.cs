@@ -98,6 +98,7 @@ namespace GMLM.Game
         [SerializeField] private Color _reloadedColor = Color.white; // 장전 완료 색상
         [SerializeField] private float _reloadPulseSpeed = 2.0f; // 장전 중 펄스 속도
         private Dictionary<WeaponSlot, Tween> _ammoPulseTweens = new Dictionary<WeaponSlot, Tween>();
+        private Dictionary<WeaponSlot, bool> _wasReloading = new Dictionary<WeaponSlot, bool>();
 
         private void Awake()
         {
@@ -277,34 +278,52 @@ namespace GMLM.Game
             if (fillImage == null) return;
 
             var weapon = GetWeaponInSlot(slot);
+            bool wasReloadingBefore = _wasReloading.ContainsKey(slot) && _wasReloading[slot];
+            
             if (weapon != null)
             {
-                // 장전 중인지 확인
                 if (weapon.IsReloading)
                 {
-                    // 장전 중: Fill을 1.0으로 채우고 빨간색으로 반짝반짝
-                    fillImage.fillAmount = backgroundMaxFill;
+                    // 장전 중: 진행률에 따라 fillAmount 채우면서 빨간색 펄스
+                    float progress = weapon.ReloadProgress;
+                    fillImage.fillAmount = backgroundMaxFill * progress;
                     
-                    // 펄스가 이미 실행 중이 아니면 시작
+                    // 펄스가 실행 중이 아니면 시작
                     if (!_ammoPulseTweens.ContainsKey(slot) || _ammoPulseTweens[slot] == null || !_ammoPulseTweens[slot].IsActive())
                     {
                         StartAmmoReloadPulse(slot, fillImage);
                     }
+                    
+                    _wasReloading[slot] = true;
                 }
                 else
                 {
-                    // 장전 완료: 정상 잔탄 수 표시, 흰색
-                    StopAmmoReloadPulse(slot);
+                    // 장전 완료 순간 감지 → 흰색 플래시
+                    if (wasReloadingBefore)
+                    {
+                        StopAmmoReloadPulse(slot);
+                        StartAmmoReloadCompleteFlash(slot, fillImage);
+                    }
+                    
+                    // 정상 상태: 실제 잔탄 수 표시
                     float ratio = (float)weapon.CurrentAmmo / weapon.MagazineSize;
                     fillImage.fillAmount = backgroundMaxFill * ratio;
-                    fillImage.color = _reloadedColor;
+                    
+                    // 플래시 중이 아니면 흰색으로 설정
+                    if (!_ammoPulseTweens.ContainsKey(slot) || _ammoPulseTweens[slot] == null || !_ammoPulseTweens[slot].IsActive())
+                    {
+                        fillImage.color = _reloadedColor;
+                    }
+                    
+                    _wasReloading[slot] = false;
                 }
             }
             else
             {
-                // 무기가 없으면 Fill 숨기기
+                // 무기 없음
                 StopAmmoReloadPulse(slot);
                 fillImage.fillAmount = 0f;
+                _wasReloading[slot] = false;
             }
         }
 
@@ -392,6 +411,29 @@ namespace GMLM.Game
                 _ammoPulseTweens[slot].Kill();
                 _ammoPulseTweens.Remove(slot);
             }
+        }
+
+        /// <summary>
+        /// 장전 완료 시 흰색 플래시 효과
+        /// </summary>
+        private void StartAmmoReloadCompleteFlash(WeaponSlot slot, Image fillImage)
+        {
+            if (fillImage == null) return;
+            
+            // 기존 펄스 정리
+            StopAmmoReloadPulse(slot);
+            
+            // 밝은 흰색으로 순간 플래시 후 원래 색으로 복귀
+            Color brightWhite = new Color(1f, 1f, 1f, 1f);
+            _ammoPulseTweens[slot] = DOTween.Sequence()
+                .Append(fillImage.DOColor(brightWhite, 0.1f))
+                .Append(fillImage.DOColor(_reloadedColor, 0.2f))
+                .OnComplete(() => {
+                    if (_ammoPulseTweens.ContainsKey(slot))
+                    {
+                        _ammoPulseTweens.Remove(slot);
+                    }
+                });
         }
 
         private void Update() {

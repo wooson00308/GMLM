@@ -181,4 +181,63 @@ protected override Node InitializeTree(IBlackboard blackboard)
 - 위와 같이 조립을 마치고 Unity 씬을 실행하면, `MyGuardAI`는 매 프레임 `UtilitySelector`를 통해 '공격'과 '대기' 행동의 가치를 비교합니다.
 - 플레이어와의 거리가 가까워지면 `distanceConsideration`의 점수가 `distanceCurve`에 따라 높아지고, `attackScorer`의 최종 점수도 따라 올라갑니다.
 - `attackScorer`의 점수가 `idleScorer`의 점수보다 높아지는 순간, AI는 '공격' 행동을 선택하게 됩니다.
-- AI의 반응성을 바꾸고 싶다면, `MyGuardAI.cs` 코드에서 `AnimationCurve`의 키프레임 값들을 수정하여 쉽게 튜닝할 수 있습니다. 
+- AI의 반응성을 바꾸고 싶다면, `MyGuardAI.cs` 코드에서 `AnimationCurve`의 키프레임 값들을 수정하여 쉽게 튜닝할 수 있습니다.
+
+---
+
+## 5. 고급 기능 (Advanced Features)
+
+### 5.1 타입 안전한 Blackboard 사용
+
+기존 string 기반 API와 함께 타입 안전한 API도 제공됩니다:
+
+```csharp
+// 기존 방식 (여전히 지원)
+blackboard.SetGameObject("player", player.gameObject);
+var player = blackboard.GetGameObject("player");
+
+// 새로운 타입 안전 방식
+var playerKey = new BlackboardKey<GameObject>("player");
+blackboard.SetGameObject(playerKey, player.gameObject);
+var player = blackboard.GetGameObject(playerKey);
+```
+
+### 5.2 커스텀 점수 집계 전략
+
+기존 enum 방식 외에 커스텀 집계 전략을 사용할 수 있습니다:
+
+```csharp
+// 기존 방식 (여전히 지원)
+var attackScorer = new UtilityScorer(
+    attackAction,
+    new List<Consideration> { distanceConsideration },
+    ScoreAggregationType.Average
+);
+
+// 새로운 전략 패턴 방식
+var customStrategy = new WeightedAverageStrategy(); // 커스텀 전략
+var attackScorer = new UtilityScorer(
+    attackAction,
+    new List<Consideration> { distanceConsideration },
+    customStrategy
+);
+```
+
+### 5.3 개선된 비동기 실행
+
+예외 처리가 가능한 새로운 비동기 API:
+
+```csharp
+// 기존 방식 (여전히 지원)
+tree.Tick(); // async void
+
+// 새로운 방식 (예외 처리 가능)
+try
+{
+    await tree.TickAsync(); // UniTask 반환
+}
+catch (Exception ex)
+{
+    Debug.LogError($"AI 실행 중 오류: {ex.Message}");
+}
+``` 

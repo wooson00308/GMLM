@@ -20,21 +20,18 @@ namespace GMLM.Game
             var attack = new AttackAction(blackboard, "self", "target", 0f); // 무기 사거리 사용
             var idle = new IdleAction(blackboard);
 
-            // Parallel: 회피 토글/대시, 궤도 유지, 공격 동시 수행
-            var parallel = new Parallel(Parallel.Policy.RequireOne, new List<Node>
-            {
-                //evadeToggle,
-                evadeDash,
-                strafe,
-                attack
-            });
+            var parallel = BehaviorTreeBuilder
+                .Parallel(Parallel.Policy.RequireOne)
+                .Add(evadeDash)
+                .Add(strafe)
+                .Add(attack)
+                .Build();
 
-            // Root: UpdateTarget then Selector
-            var root = new Sequence(new List<Node>
-            {
-                updateTarget,
-                parallel
-            });
+            var root = BehaviorTreeBuilder
+                .Sequence()
+                .Add(updateTarget)
+                .Add(parallel)
+                .Build();
 
             return root;
         }

@@ -1,14 +1,22 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GMLM.AI
 {
     public abstract class CompositeNode : Node
     {
-        protected readonly List<Node> Children;
+        protected readonly INodeContext Context;
 
         protected CompositeNode(List<Node> children)
         {
-            Children = children;
+            Context = new NodeContext(null, children);
         }
+
+        protected CompositeNode(INodeContext context)
+        {
+            Context = context;
+        }
+
+        protected List<Node> Children => Context.Children.ToList();
     }
 } 
