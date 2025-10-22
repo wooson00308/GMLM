@@ -9,6 +9,7 @@ namespace GMLM.Game
 	{
 		[Header("Rig Transforms")]
 		[SerializeField] private Transform _head;
+		[SerializeField] private Transform _torso;
 		[SerializeField] private Transform _leftHand;
 		[SerializeField] private Transform _rightHand;
 		[SerializeField] private Transform _leftShoulder;

@@ -1,5 +1,4 @@
 using UnityEngine;
-using GMLM.Data;
 
 namespace GMLM.Game {
     public class Pilot : MonoBehaviour
@@ -18,15 +17,6 @@ namespace GMLM.Game {
             if(!string.IsNullOrEmpty(_name)) {
                 Name = _name;
             }
-        }
-
-        public void Initialize(PilotData data)
-        {
-            Id = data.id;
-            Name = data.name;
-            Description = data.description;
-            Image = data.image;
-            _combatStyle = data.combatStyle;
         }
     }
 }
