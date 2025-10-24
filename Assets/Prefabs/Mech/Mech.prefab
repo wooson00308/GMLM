@@ -193,8 +193,8 @@ MonoBehaviour:
   _leftShoulder: {fileID: 892468211335932608}
   _rightShoulder: {fileID: 4940388474932765359}
   _maxHeadYaw: 360
-  _maxLeftHandYaw: 360
-  _maxRightHandYaw: 360
+  _maxLeftHandYaw: 70
+  _maxRightHandYaw: 70
   _maxLeftShoulderYaw: 360
   _maxRightShoulderYaw: 360
   _headTurnSpeed: 720
@@ -232,7 +232,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GMLM.Game.Pilot
   _combatStyle: 1
-  _name: 
+  _name: SASHA
 --- !u!114 &4185834312548984789
 MonoBehaviour:
   m_ObjectHideFlags: 0
