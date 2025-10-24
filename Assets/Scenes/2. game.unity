@@ -870,6 +870,14 @@ PrefabInstance:
       value: 230
       objectReference: {fileID: 0}
     - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -1120,6 +1128,14 @@ PrefabInstance:
     - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
       propertyPath: m_SizeDelta.y
       value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1589,6 +1605,14 @@ PrefabInstance:
       value: 230
       objectReference: {fileID: 0}
     - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -1704,6 +1728,14 @@ PrefabInstance:
     - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
       propertyPath: m_SizeDelta.y
       value: 230
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3075333751603234102, guid: 1d5462962ff32e245a882ec6cd451b36, type: 3}
       propertyPath: m_LocalPosition.x
